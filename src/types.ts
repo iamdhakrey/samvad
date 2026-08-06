@@ -277,3 +277,15 @@ export interface WorkspaceStore {
   ) => Promise<void>;
   setActiveEnvironment: (id: string | null) => Promise<void>;
 }
+
+
+export const MethodStyles: Record<HttpMethod, string> = {
+  GET: "text-method-get",
+  POST: "text-secondary",
+  PUT: "text-warning",
+  PATCH: "text-primary",
+  DELETE: "text-error",
+  OPTIONS: "text-text-muted",
+  HEAD: "text-text-muted",
+  WS: "text-method-ws",
+};

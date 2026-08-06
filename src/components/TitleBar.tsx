@@ -1,7 +1,7 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Maximize, Minimize, Minus, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useVartaStore } from "../store";
+import { useVartaStore } from "../store/vartaStore";
 
 const appWindow = getCurrentWindow();
 

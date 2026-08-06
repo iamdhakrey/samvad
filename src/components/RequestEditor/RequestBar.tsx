@@ -1,7 +1,9 @@
 import { ChevronDown } from "lucide-react";
-import { MethodStyles, useVartaStore, useWorkspaceStore } from "../../store";
 import { HttpMethod, RequestTab } from "../../types";
 import { useRef, useState } from "react";
+import { useVartaStore } from "../../store/vartaStore";
+import { useWorkspaceStore } from "../../store/workspaceStore";
+import { MethodStyles } from "../../types";
 
 const methods: HttpMethod[] = [
   "GET",

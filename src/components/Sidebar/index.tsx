@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { Search, Plus, Upload, Settings, X } from "lucide-react";
-import {
-  useVartaStore,
-  useSettingsStore,
-  useWorkspaceStore,
-} from "../../store";
 import { WorkspaceSelector } from "./WorkspaceSelector";
 import { CollectionsTree } from "./CollectionTree";
 import { EnvironmentSelector } from "./EnvironmentSelector";
+import { useWorkspaceStore } from "../../store/workspaceStore";
+import { useVartaStore } from "../../store/vartaStore";
+import { useSettingsStore } from "../../store/settingStore";
 
 interface SidebarProps {
   isMobile: boolean;

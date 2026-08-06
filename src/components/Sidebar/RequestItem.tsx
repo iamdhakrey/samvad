@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { ApiRequest, HttpMethod } from "../../types";
 import { Check, Edit2, Trash2, X } from "lucide-react";
-import { useWorkspaceStore, useVartaStore } from "../../store"; // Import the store managing tabs
+import { useWorkspaceStore } from "../../store/workspaceStore";
+import { useVartaStore } from "../../store/vartaStore";
 
 const methodColors: Record<HttpMethod, string> = {
   GET: "text-method-get",

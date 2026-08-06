@@ -1,6 +1,10 @@
 import { X } from "lucide-react";
-import { MethodStyles, useVartaStore } from "../store";
-import { useEffect } from "react";
+import { useVartaStore } from "../store/vartaStore";
+import { historyEntries } from "../data/mock";
+import { MethodStyles } from "../types";
+// import { HttpMethod } from "../types";
+
+
 
 function statusColor(status: number) {
   if (status >= 200 && status < 300) return "text-success";

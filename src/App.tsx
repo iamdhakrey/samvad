@@ -5,7 +5,7 @@ import ResponsePanel from "./components/ResponsePanel";
 import WebSocketPanel from "./components/WebSocketPanel";
 import CommandPalette from "./components/CommandPalette";
 import HistoryDrawer from "./components/HistoryDrawer";
-import { useVartaStore } from "./store";
+import { useVartaStore } from "./store/vartaStore";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useResizablePanel } from "./hooks/useResizablePanel";
 import { useMobileDetect } from "./hooks/useMobileDetect";

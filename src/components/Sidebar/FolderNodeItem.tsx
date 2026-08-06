@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FolderNode as FolderNodeType } from "../../types";
 import { RequestItem } from "./RequestItem";
-import { useWorkspaceStore } from "../../store";
 import {
   ChevronRight,
   Folder,
@@ -14,6 +13,7 @@ import {
   Check,
   X
 } from "lucide-react";
+import { useWorkspaceStore } from "../../store/workspaceStore";
 
 export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> = ({
   node,

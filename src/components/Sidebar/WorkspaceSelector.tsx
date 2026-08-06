@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useWorkspaceStore } from "../../store";
 import {
   ChevronDown,
   Plus,
@@ -10,6 +9,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import { useWorkspaceStore } from "../../store/workspaceStore";
 
 export const WorkspaceSelector: React.FC = () => {
   const {
@@ -110,8 +110,8 @@ export const WorkspaceSelector: React.FC = () => {
                 <div
                   key={workspace.id}
                   className={`group flex items-center justify-between px-3 py-1.5 mx-1 my-0.5 rounded-md text-sm text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${workspace.id === activeWorkspaceId
-                      ? "bg-panel/40 text-text-primary"
-                      : ""
+                    ? "bg-panel/40 text-text-primary"
+                    : ""
                     }`}
                 >
                   {editingId === workspace.id ? (

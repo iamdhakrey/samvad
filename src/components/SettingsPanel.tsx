@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSettingsStore } from "../store";
+import { useSettingsStore } from "../store/settingStore";
 import { AppSettings } from "../types";
 import {
   X,
@@ -89,11 +89,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isMobile = false }
       onMouseDown={() => setSettingsOpen(false)}
     >
       <div
-        className={`relative flex overflow-hidden rounded-xl border border-border bg-bg shadow-elevated animate-in zoom-in-95 duration-200 ${
-          isMobile
-            ? "w-[95vw] h-[90vh] flex-col"
-            : "w-full max-w-3xl h-[78vh] flex-row"
-        }`}
+        className={`relative flex overflow-hidden rounded-xl border border-border bg-bg shadow-elevated animate-in zoom-in-95 duration-200 ${isMobile
+          ? "w-[95vw] h-[90vh] flex-col"
+          : "w-full max-w-3xl h-[78vh] flex-row"
+          }`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* ── Nav — sidebar on desktop, horizontal tabs on mobile ── */}
@@ -104,11 +103,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isMobile = false }
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
-                    activeTab === tab.id
-                      ? "bg-primary/15 text-primary"
-                      : "text-text-secondary hover:bg-borderMuted hover:text-text-primary"
-                  }`}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${activeTab === tab.id
+                    ? "bg-primary/15 text-primary"
+                    : "text-text-secondary hover:bg-borderMuted hover:text-text-primary"
+                    }`}
                 >
                   {tab.icon}
                   {tab.label}
@@ -133,11 +131,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isMobile = false }
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer text-left ${
-                  activeTab === tab.id
-                    ? "bg-primary/15 text-primary"
-                    : "text-text-secondary hover:bg-borderMuted hover:text-text-primary"
-                }`}
+                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer text-left ${activeTab === tab.id
+                  ? "bg-primary/15 text-primary"
+                  : "text-text-secondary hover:bg-borderMuted hover:text-text-primary"
+                  }`}
               >
                 {tab.icon}
                 {tab.label}
@@ -338,9 +335,8 @@ const ShortcutsTab: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) =>
       {SHORTCUT_LIST.map(({ action, keys }) => (
         <div
           key={action}
-          className={`flex items-center justify-between bg-panel hover:bg-panel-raised transition-colors ${
-            isMobile ? "px-3 py-2" : "px-4 py-2.5"
-          }`}
+          className={`flex items-center justify-between bg-panel hover:bg-panel-raised transition-colors ${isMobile ? "px-3 py-2" : "px-4 py-2.5"
+            }`}
         >
           <span className={`text-text-primary ${isMobile ? "text-xs" : "text-sm"}`}>{action}</span>
           <div className="flex items-center gap-1">
@@ -390,17 +386,15 @@ const ToggleRow: React.FC<ToggleRowProps> = ({ icon, label, description, checked
         className="sr-only peer"
       />
       <div
-        className={`w-9 h-5 rounded-full border transition-colors cursor-pointer ${
-          checked
-            ? "bg-primary border-primary"
-            : "bg-panel-raised border-border"
-        }`}
+        className={`w-9 h-5 rounded-full border transition-colors cursor-pointer ${checked
+          ? "bg-primary border-primary"
+          : "bg-panel-raised border-border"
+          }`}
         onClick={() => onChange(!checked)}
       >
         <div
-          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${
-            checked ? "translate-x-4" : "translate-x-0"
-          }`}
+          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${checked ? "translate-x-4" : "translate-x-0"
+            }`}
         />
       </div>
     </div>

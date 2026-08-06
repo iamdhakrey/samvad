@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
-import { useVartaStore, useWorkspaceStore } from "../store"; // Adjust imports to match your store locations
 import { EnvironmentEditor } from "./EnvironmentEditor";
+import { useVartaStore } from "../store/vartaStore";
+import { useWorkspaceStore } from "../store/workspaceStore";
 
 interface EnvironmentModalProps {
   isMobile?: boolean;
@@ -32,11 +33,10 @@ export const EnvironmentModal: React.FC<EnvironmentModalProps> = ({ isMobile = f
       onMouseDown={closeEnvEditor}
     >
       <div
-        className={`relative flex flex-col overflow-hidden rounded-xl border border-border bg-bg shadow-elevated animate-in zoom-in-95 duration-200 ${
-          isMobile
-            ? "w-[95vw] h-[90vh]"
-            : "h-[85vh] w-[90vw] max-w-5xl"
-        }`}
+        className={`relative flex flex-col overflow-hidden rounded-xl border border-border bg-bg shadow-elevated animate-in zoom-in-95 duration-200 ${isMobile
+          ? "w-[95vw] h-[90vh]"
+          : "h-[85vh] w-[90vw] max-w-5xl"
+          }`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {activeWorkspaceId ? (
