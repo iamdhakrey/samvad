@@ -37,6 +37,7 @@
     --color-method-put: #f59e0b;
     --color-method-patch: #8b5cf6;
     --color-method-delete: #ef4444;
+    --color-method-ws: #3b82f6;
 
     /* Radius — overrides the default md/lg scale to the spec's 8px/10px */
     --radius-md: 8px;
