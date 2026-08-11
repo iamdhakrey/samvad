@@ -1,6 +1,6 @@
+import { AUTH0_DOMAIN } from "../hooks/useAuth0Desktop";
 import { User } from "../store/authStore";
 
-const AUTH0_DOMAIN = 'Demo.us.auth0.com';
 
 export async function fetchUserInfo(accessToken: string): Promise<User> {
     try {

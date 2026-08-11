@@ -5,6 +5,7 @@
     "": {
       "name": "varta",
       "dependencies": {
+        "@fabianlars/tauri-plugin-oauth": "2",
         "@monaco-editor/react": "^4.7.0",
         "@tailwindcss/vite": "^4.3.1",
         "@tauri-apps/api": "^2",
@@ -121,6 +122,8 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.27.7", "", { "os": "win32", "cpu": "ia32" }, "sha512-SmwKXe6VHIyZYbBLJrhOoCJRB/Z1tckzmgTLfFYOfpMAx63BJEaL9ExI8x7v0oAO3Zh6D/Oi1gVxEYr5oUCFhw=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.27.7", "", { "os": "win32", "cpu": "x64" }, "sha512-56hiAJPhwQ1R4i+21FVF7V8kSD5zZTdHcVuRFMW0hn753vVfQN8xlx4uOPT4xoGH0Z/oVATuR82AiqSTDIpaHg=="],
+
+    "@fabianlars/tauri-plugin-oauth": ["@fabianlars/tauri-plugin-oauth@2.1.0", "", { "dependencies": { "@tauri-apps/api": "^2.11.0" } }, "sha512-KElVn5VWJ7FPTbWvZ38NNWsxTMQ4wKNnWSB75eIh/CwO0RLLNH1eL3POdulluiaS4f0TWGdkL9nlD2ZKhi8DIQ=="],
 
     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
 
