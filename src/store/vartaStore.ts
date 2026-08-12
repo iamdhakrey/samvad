@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
     ApiRequest,
+    HistoryEntry,
     RequestTab,
     WsMessage,
     WsSavedMessage,
@@ -19,6 +20,7 @@ interface VartaState {
     activeEnvId: string;
     isEnvEditorOpen: boolean;
     isSidebarOpen: boolean;
+    historyEntries: HistoryEntry[];
 
     openRequest: (request: ApiRequest) => void;
     newTab: () => void;
@@ -50,6 +52,11 @@ interface VartaState {
     deleteSavedMessage: (requestId: string, messageId: string) => Promise<void>;
     setWsProtocol: (protocol: "raw" | "graphql-ws") => void;
     initWsListener: () => Promise<UnlistenFn>;
+    // HistoryEntry
+    fetchHistory: () => Promise<void>;
+    deleteHistoryEntry: (id: string) => Promise<void>;
+    clearHistory: () => Promise<void>;
+
 }
 
 
@@ -80,6 +87,7 @@ export const useVartaStore = create<VartaState>((set, get) => ({
     isEnvEditorOpen: false,
     isSidebarOpen: false,
     activeTab: null,
+    historyEntries: [],
 
     toggleSidebar: (open) =>
         set((s) => ({
@@ -182,6 +190,7 @@ export const useVartaStore = create<VartaState>((set, get) => ({
                     ),
                 }));
                 // setResponse(res);
+                get().fetchHistory();
             } catch (err) {
                 console.error(err);
 
@@ -490,5 +499,37 @@ export const useVartaStore = create<VartaState>((set, get) => ({
             unlisten();
             unlistenStatus();
         };
+    },
+
+    fetchHistory: async () => {
+        try {
+            const historyEntries = await invoke<HistoryEntry[]>("list_history", {
+                limit: 100,
+            });
+            console.log("Fetched history entries:", historyEntries);
+            set({ historyEntries: historyEntries });
+        } catch (error) {
+            console.error("Failed to load history:", error);
+        }
+    },
+
+    clearHistory: async () => {
+        try {
+            await invoke("clear_history");
+            set({ historyEntries: [] });
+        } catch (error) {
+            console.error("Failed to clear history:", error);
+        }
+    },
+
+    deleteHistoryEntry: async (id: string) => {
+        try {
+            await invoke("delete_history_entry", { id });
+            set((state) => ({
+                historyEntries: state.historyEntries.filter((entry) => entry.id !== id),
+            }));
+        } catch (error) {
+            console.error("Failed to delete history entry:", error);
+        }
     },
 }));

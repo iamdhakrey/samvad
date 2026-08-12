@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { useVartaStore } from "../store/vartaStore";
-import { historyEntries } from "../data/mock";
 import { MethodStyles } from "../types";
+import { useEffect } from "react";
 // import { HttpMethod } from "../types";
 
 
