@@ -60,6 +60,7 @@ export interface WorkspaceStore {
     ) => Promise<void>;
     // updateRequest: (requestId: string, updatedRequest: Partial<ApiRequest>) => Promise<void>;
     deleteRequest: (requestId: string) => Promise<void>;
+    renameRequest: (id: string, name: string) => Promise<void>;
 
     fetchEnvironments: (workspaceid: string) => Promise<void>;
     createEnvironment: (workspaceid: string, name: string) => Promise<void>;
@@ -402,6 +403,18 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
             set({ isLoadingCollections: false });
         } catch (err) {
             console.error("Error deleting request:", err);
+            set({ error: String(err), isLoadingCollections: false });
+        }
+    },
+
+    renameRequest: async (id: string, name: string) => {
+        set({ isLoadingCollections: true });
+        try {
+            await invoke("rename_request", { requestid: id, name });
+            await get().fetchCollections(); // Refresh the collection list after request rename
+            set({ isLoadingCollections: false });
+        } catch (err) {
+            console.error("Error renaming request:", err);
             set({ error: String(err), isLoadingCollections: false });
         }
     },
