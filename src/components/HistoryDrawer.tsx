@@ -1,9 +1,6 @@
 import { X } from "lucide-react";
 import { MethodStyles, useVartaStore } from "../store";
-import { historyEntries } from "../data/mock";
-// import { HttpMethod } from "../types";
-
-
+import { useEffect } from "react";
 
 function statusColor(status: number) {
   if (status >= 200 && status < 300) return "text-success";
@@ -15,9 +12,18 @@ interface HistoryDrawerProps {
   isMobile?: boolean;
 }
 
-export default function HistoryDrawer({ isMobile = false }: HistoryDrawerProps) {
+export default function HistoryDrawer({
+  isMobile = false,
+}: HistoryDrawerProps) {
   const isOpen = useVartaStore((s) => s.isHistoryOpen);
   const toggle = useVartaStore((s) => s.toggleHistory);
+  const historyEntries = useVartaStore((s) => s.historyEntries);
+  const fetchHistory = useVartaStore((s) => s.fetchHistory);
+  // const clearHistory = useVartaStore((s) => s.clearHistory);
+  const deleteHistoryEntry = useVartaStore((s) => s.deleteHistoryEntry);
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   if (!isOpen) return null;
 
@@ -34,7 +40,9 @@ export default function HistoryDrawer({ isMobile = false }: HistoryDrawerProps) 
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <span className="text-sm font-medium text-text-primary">History</span>
+            <span className="text-sm font-medium text-text-primary">
+              History
+            </span>
             <button
               onClick={() => toggle(false)}
               aria-label="Close history"
@@ -47,7 +55,7 @@ export default function HistoryDrawer({ isMobile = false }: HistoryDrawerProps) 
           <div className="flex-1 overflow-y-auto">
             {historyEntries.map((h) => (
               <button
-                key={h.id}
+                key={h.requestid}
                 className="flex w-full flex-col gap-1 border-b border-borderMuted px-4 py-2.5 text-left hover:bg-panel-raised"
               >
                 <div className="flex items-center gap-2">
@@ -57,7 +65,7 @@ export default function HistoryDrawer({ isMobile = false }: HistoryDrawerProps) 
                     {h.method}
                   </span>
                   <span className="truncate text-sm text-text-primary">
-                    {h.url}
+                    {h.name}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-text-muted">
@@ -89,8 +97,8 @@ export default function HistoryDrawer({ isMobile = false }: HistoryDrawerProps) 
 
       <div className="flex-1 overflow-y-auto">
         {historyEntries.map((h) => (
-          <button
-            key={h.id}
+          <div
+            key={h.requestid}
             className="flex w-full flex-col gap-1 border-b border-borderMuted px-4 py-2.5 text-left hover:bg-panel-raised"
           >
             <div className="flex items-center gap-2">
@@ -100,15 +108,26 @@ export default function HistoryDrawer({ isMobile = false }: HistoryDrawerProps) 
                 {h.method}
               </span>
               <span className="truncate text-sm text-text-primary">
-                {h.url}
+                {h.name}
               </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteHistoryEntry(h.id);
+                }}
+                className="ml-auto text-text-secondary hover:text-text-primary"
+                aria-label="Delete history entry"
+              >
+                <X size={12} />
+              </button>
             </div>
             <div className="flex items-center gap-3 text-xs text-text-muted">
               <span className={statusColor(h.status)}>{h.status}</span>
-              <span>{h.timestamp}</span>
+              <span className="truncate">{h.url}</span>
+              {/*<span>{h.timestamp}</span>*/}
               <span>{h.durationMs} ms</span>
             </div>
-          </button>
+          </div>
         ))}
       </div>
     </div>

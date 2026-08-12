@@ -21,6 +21,8 @@ use crate::ws::{
     ws_list_saved_messages, ws_send, ws_update_saved_message,
 };
 
+use crate::commands::history::{clear_history, delete_history_entry, list_history};
+
 mod commands;
 pub mod db;
 mod error;
@@ -107,6 +109,11 @@ pub fn run() {
             ws_add_saved_message,
             ws_update_saved_message,
             ws_delete_saved_message,
+            // History commands
+            // add_entry,
+            list_history,
+            clear_history,
+            delete_history_entry
         ])
         .run(tauri::generate_context!())
         .expect("error while running Samvad application");
