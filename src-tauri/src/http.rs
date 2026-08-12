@@ -96,6 +96,7 @@ pub async fn send_request(
         dd,
         Some(&request.id),
         interpolated.method,
+        Some(&request.name),
         &interpolated.url,
         api_response.status,
         elapsed.as_millis(),

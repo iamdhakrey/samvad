@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, str::FromStr};
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -52,6 +52,22 @@ impl HttpMethod {
             HttpMethod::Options => "OPTIONS",
             HttpMethod::Head => "HEAD",
             HttpMethod::Ws => "WS",
+        }
+    }
+}
+
+impl FromStr for HttpMethod {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Case-insensitive matching
+        match s.to_uppercase().as_str() {
+            "GET" => Ok(HttpMethod::Get),
+            "POST" => Ok(HttpMethod::Post),
+            "PUT" => Ok(HttpMethod::Put),
+            "PATCH" => Ok(HttpMethod::Patch),
+            "DELETE" => Ok(HttpMethod::Delete),
+            _ => Err(format!("Invalid HTTP method: {}", s)),
         }
     }
 }
@@ -271,6 +287,7 @@ pub struct EnvironmentWithVariables {
 pub struct HistoryEntry {
     pub id: String,
     pub request_id: Option<String>,
+    pub name: Option<String>,
     pub method: HttpMethod,
     pub url: String,
     pub status: u16,

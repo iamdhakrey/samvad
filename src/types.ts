@@ -99,7 +99,9 @@ export interface Environment {
 
 export interface HistoryEntry {
   id: string;
+  requestid: string;
   method: HttpMethod;
+  name: string;
   url: string;
   status: number;
   timestamp: string;

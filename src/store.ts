@@ -5,6 +5,7 @@ import {
   CollectionTree,
   EnvironmentVariable,
   EnvironmentWithVariables,
+  HistoryEntry,
   HttpMethod,
   RequestTab,
   WsMessage,
@@ -24,6 +25,7 @@ interface VartaState {
   activeEnvId: string;
   isEnvEditorOpen: boolean;
   isSidebarOpen: boolean;
+  historyEntries: HistoryEntry[];
 
   openRequest: (request: ApiRequest) => void;
   newTab: () => void;
@@ -55,6 +57,11 @@ interface VartaState {
   deleteSavedMessage: (requestId: string, messageId: string) => Promise<void>;
   setWsProtocol: (protocol: "raw" | "graphql-ws") => void;
   initWsListener: () => Promise<UnlistenFn>;
+
+  // HistoryEntry
+  fetchHistory: () => Promise<void>;
+  deleteHistoryEntry: (id: string) => Promise<void>;
+  clearHistory: () => Promise<void>;
 }
 
 let tabCounter = 0;
@@ -83,6 +90,7 @@ export const useVartaStore = create<VartaState>((set, get) => ({
   isEnvEditorOpen: false,
   isSidebarOpen: false,
   activeTab: null,
+  historyEntries: [],
 
   toggleSidebar: (open) =>
     set((s) => ({
@@ -184,6 +192,7 @@ export const useVartaStore = create<VartaState>((set, get) => ({
               : t,
           ),
         }));
+        get().fetchHistory();
         // setResponse(res);
       } catch (err) {
         console.error(err);
@@ -193,11 +202,11 @@ export const useVartaStore = create<VartaState>((set, get) => ({
           tabs: s.tabs.map((t) =>
             t.id === activeTabId
               ? {
-                ...t,
-                isSending: false,
-                response: undefined,
-                error: errorMessage,
-              }
+                  ...t,
+                  isSending: false,
+                  response: undefined,
+                  error: errorMessage,
+                }
               : t,
           ),
         }));
@@ -250,11 +259,11 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       tabs: s.tabs.map((t) =>
         t.id === activeTabId
           ? {
-            ...t,
-            wsStatus: "connecting" as const,
-            wsMessages: [],
-            wsGqlSubscriptionIds: [],
-          }
+              ...t,
+              wsStatus: "connecting" as const,
+              wsMessages: [],
+              wsGqlSubscriptionIds: [],
+            }
           : t,
       ),
     }));
@@ -284,10 +293,10 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         tabs: s.tabs.map((t) =>
           t.id === activeTabId
             ? {
-              ...t,
-              wsConnectionId: connectionId,
-              wsStatus: "connected" as const,
-            }
+                ...t,
+                wsConnectionId: connectionId,
+                wsStatus: "connected" as const,
+              }
             : t,
         ),
       }));
@@ -326,10 +335,10 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       tabs: s.tabs.map((t) =>
         t.id === activeTabId
           ? {
-            ...t,
-            wsConnectionId: undefined,
-            wsStatus: "disconnected" as const,
-          }
+              ...t,
+              wsConnectionId: undefined,
+              wsStatus: "disconnected" as const,
+            }
           : t,
       ),
     }));
@@ -352,9 +361,9 @@ export const useVartaStore = create<VartaState>((set, get) => ({
           tabs: s.tabs.map((t) =>
             t.id === activeTabId
               ? {
-                ...t,
-                wsGqlSubscriptionIds: [...t.wsGqlSubscriptionIds, subId],
-              }
+                  ...t,
+                  wsGqlSubscriptionIds: [...t.wsGqlSubscriptionIds, subId],
+                }
               : t,
           ),
         }));
@@ -453,11 +462,11 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         tabs: s.tabs.map((t) =>
           t.request.id === requestId
             ? {
-              ...t,
-              wsSavedMessages: t.wsSavedMessages.filter(
-                (m) => m.id !== messageId,
-              ),
-            }
+                ...t,
+                wsSavedMessages: t.wsSavedMessages.filter(
+                  (m) => m.id !== messageId,
+                ),
+              }
             : t,
         ),
       }));
@@ -480,10 +489,10 @@ export const useVartaStore = create<VartaState>((set, get) => ({
           tabs: s.tabs.map((t) =>
             t.wsConnectionId === event.payload.connectionId
               ? {
-                ...t,
-                wsConnectionId: undefined,
-                wsStatus: "disconnected" as const,
-              }
+                  ...t,
+                  wsConnectionId: undefined,
+                  wsStatus: "disconnected" as const,
+                }
               : t,
           ),
         }));
@@ -493,6 +502,37 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       unlisten();
       unlistenStatus();
     };
+  },
+  fetchHistory: async () => {
+    try {
+      const historyEntries = await invoke<HistoryEntry[]>("list_history", {
+        limit: 100,
+      });
+      console.log("Fetched history entries:", historyEntries);
+      set({ historyEntries: historyEntries });
+    } catch (error) {
+      console.error("Failed to load history:", error);
+    }
+  },
+
+  clearHistory: async () => {
+    try {
+      await invoke("clear_history");
+      set({ historyEntries: [] });
+    } catch (error) {
+      console.error("Failed to clear history:", error);
+    }
+  },
+
+  deleteHistoryEntry: async (id: string) => {
+    try {
+      await invoke("delete_history_entry", { id });
+      set((state) => ({
+        historyEntries: state.historyEntries.filter((entry) => entry.id !== id),
+      }));
+    } catch (error) {
+      console.error("Failed to delete history entry:", error);
+    }
   },
 }));
 
