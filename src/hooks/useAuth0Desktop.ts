@@ -20,10 +20,23 @@ const APP_SCHEME = "samvad";
 function generateRandomString(length: number): string {
   const charset =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
-  const values = crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(values)
-    .map((x) => charset[x % charset.length])
-    .join("");
+  const charsetLength = charset.length;
+  const maxValid = Math.floor(256 / charsetLength) * charsetLength;
+  const result: string[] = [];
+
+  while (result.length < length) {
+    const values = crypto.getRandomValues(
+      new Uint8Array(Math.max(length - result.length, 16)),
+    );
+
+    for (const value of values) {
+      if (value >= maxValid) continue;
+      result.push(charset[value % charsetLength]);
+      if (result.length === length) break;
+    }
+  }
+
+  return result.join("");
 }
 
 async function generateCodeChallenge(verifier: string): Promise<string> {
