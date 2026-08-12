@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { RequestTab, WsSavedMessage } from "../../types";
-import { useVartaStore } from "../../store";
+import { useVartaStore } from "../../store/vartaStore";
 import { Save, Send, Trash2, X } from "lucide-react";
 
 function SavedWSTab({ tab, isMobile }: { tab: RequestTab; isMobile: boolean }) {

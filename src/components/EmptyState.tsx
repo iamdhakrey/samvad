@@ -1,5 +1,5 @@
 import { Plus, Upload } from "lucide-react";
-import { useVartaStore } from "../store";
+import { useVartaStore } from "../store/vartaStore";
 
 interface EmptyStateProps {
   isMobile?: boolean;

@@ -1,4 +1,5 @@
-use tauri::Manager;
+use tauri::{Emitter, Manager, Window};
+use tauri_plugin_oauth::start;
 
 use crate::commands::collections::{
     clone_collection, create_collection, create_folder, create_request, create_ws_request,
@@ -37,6 +38,16 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+#[tauri::command]
+async fn start_server(window: Window) -> Result<u16, String> {
+    start(move |url| {
+        // Because of the unprotected localhost port, you must verify the URL here.
+        // Preferebly send back only the token, or nothing at all if you can handle everything else in Rust.
+        let _ = window.emit("redirect_uri", url);
+    })
+    .map_err(|err| err.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -44,9 +55,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_oauth::init())
         .setup(|app| {
             let app_handle = app.handle().clone();
-
             let data_dir = app_handle
                 .path()
                 .app_data_dir()
@@ -64,6 +76,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             greet,
+            start_server,
             send_request,
             list_workspaces,
             create_workspace,

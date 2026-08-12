@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useVartaStore, useWorkspaceStore } from "../../store";
 import {
   Cloud,
   ChevronDown,
@@ -9,6 +8,8 @@ import {
   Folder,
   Edit,
 } from "lucide-react";
+import { useWorkspaceStore } from "../../store/workspaceStore";
+import { useVartaStore } from "../../store/vartaStore";
 
 export const EnvironmentSelector: React.FC = () => {
   const {
@@ -67,8 +68,8 @@ export const EnvironmentSelector: React.FC = () => {
                 setIsOpen(false);
               }}
               className={`flex items-center gap-2 w-full px-3 py-1.5 text-left text-sm hover:bg-panel hover:text-text-primary transition-colors cursor-pointer ${!activeEnvironmentId
-                  ? "text-text-primary bg-panel/40"
-                  : "text-text-secondary"
+                ? "text-text-primary bg-panel/40"
+                : "text-text-secondary"
                 }`}
             >
               <div className="w-4 flex justify-center shrink-0">
@@ -84,8 +85,8 @@ export const EnvironmentSelector: React.FC = () => {
               <div
                 key={env.environment.id}
                 className={`group flex items-center justify-between px-3 py-1.5 mx-1 my-0.5 rounded-md text-sm text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${env.environment.id === activeEnvironmentId
-                    ? "bg-panel/40 text-text-primary"
-                    : ""
+                  ? "bg-panel/40 text-text-primary"
+                  : ""
                   }`}
               >
                 <>

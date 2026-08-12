@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useVartaStore, useSettingsStore } from "../store";
+import { useVartaStore } from "../store/vartaStore";
+import { useSettingsStore } from "../store/settingStore";
 
 export function useKeyboardShortcuts() {
   const newTab = useVartaStore((s) => s.newTab);

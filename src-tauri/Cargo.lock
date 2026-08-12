@@ -3457,8 +3457,10 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
+ "tauri-plugin-oauth",
  "tauri-plugin-opener",
  "tauri-plugin-process",
+ "tauri-plugin-store",
  "tauri-plugin-updater",
  "thiserror 2.0.19",
  "tokio",
@@ -4302,6 +4304,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "tauri-plugin-oauth"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de12964768a2beb9d673580694f45211bb354336e7b127476bde807093c047e3"
+dependencies = [
+ "httparse",
+ "log",
+ "serde",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.19",
+ "url",
+]
+
+[[package]]
 name = "tauri-plugin-opener"
 version = "2.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4331,6 +4348,22 @@ checksum = "d55511a7bf6cd70c8767b02c97bf8134fa434daf3926cfc1be0a0f94132d165a"
 dependencies = [
  "tauri",
  "tauri-plugin",
+]
+
+[[package]]
+name = "tauri-plugin-store"
+version = "2.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6708afbe549f176b712066e71648ba8fafba20789453718260c7ca356733cb0c"
+dependencies = [
+ "dunce",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.19",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

@@ -8,9 +8,11 @@ import {
   Settings,
   MoreHorizontal,
 } from "lucide-react";
-import { MethodStyles, useSettingsStore, useVartaStore } from "../../store";
-import { HttpMethod } from "../../types";
+import { HttpMethod, MethodStyles } from "../../types";
 import { useMobileDetect } from "../../hooks/useMobileDetect";
+import { useVartaStore } from "../../store/vartaStore";
+import { useSettingsStore } from "../../store/settingStore";
+import { UserProfileMenu } from "../UserProfileMenu";
 
 export default function TabStrip() {
   const isMobile = useMobileDetect();
@@ -97,6 +99,7 @@ export default function TabStrip() {
           >
             <Settings size={15} />
           </button>
+          <UserProfileMenu />
         </div>
       )}
 

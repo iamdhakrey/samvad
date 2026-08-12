@@ -1,7 +1,8 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Maximize, Minimize, Minus, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useVartaStore } from "../store";
+import { useVartaStore } from "../store/vartaStore";
+// import { UserProfileMenu } from "./UserProfileMenu";
 
 const appWindow = getCurrentWindow();
 
@@ -25,7 +26,7 @@ export default function Titlebar() {
     // data-tauri-drag-region tells Tauri to treat this div as the window drag handle
     <div
       data-tauri-drag-region
-      className="flex h-10 w-full select-none items-center justify-between bg-surface-950/80 border-b border-ink/10 backdrop-blur-md"
+      className="relative z-50 flex h-10 w-full select-none items-center justify-between bg-surface-950/80 border-b border-ink/10 backdrop-blur-md"
     >
       {/* App Title / Logo */}
       <div className="pointer-events-none ml-4 flex items-center gap-2">
@@ -52,6 +53,11 @@ export default function Titlebar() {
           )}
         </button>
       </div>
+
+      {/* User Profile Menu */}
+      {/*<div className="flex h-full items-center pointer-events-auto">
+        <UserProfileMenu />
+      </div>*/}
 
       {/* Window Controls */}
       {/* We apply 'pointer-events-auto' so the buttons work inside the drag region */}

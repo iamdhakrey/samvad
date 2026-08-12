@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useWorkspaceStore } from "../../store";
 // import { FolderNodeItem } from "./FolderNodeItem";
 // import { RequestItem } from "./RequestItem";
 import {
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 import { FolderNodeItem } from "./FolderNodeItem";
 import { RequestItem } from "./RequestItem";
+import { useWorkspaceStore } from "../../store/workspaceStore";
 
 export const CollectionsTree: React.FC = () => {
   const {

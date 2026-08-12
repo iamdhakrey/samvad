@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { RequestTab } from "../../types";
-import { useVartaStore } from "../../store";
+import { useVartaStore } from "../../store/vartaStore";
 import TabStrip from "./TabStrip";
 import RequestBar from "./RequestBar";
 import KeyValueTable from "./KeyValueTable";
@@ -65,9 +65,8 @@ function RequestPanel({
 
       {/* Sub-tabs — scrollable on mobile */}
       <div
-        className={`flex gap-1 border-b border-border ${
-          isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
-        }`}
+        className={`flex gap-1 border-b border-border ${isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
+          }`}
       >
         {visibleTabs.map((t) => (
           <button
