@@ -332,7 +332,7 @@ impl Default for AppSettings {
             max_redirects: 10,
             verify_ssl_certificates: true,
             timeout_ms: 30_000,
-            user_agent: "Samvad/0.1".to_string(),
+            user_agent: format!("Samvad/{}", env!("CARGO_PKG_VERSION")),
             proxy_url: None,
         }
     }
