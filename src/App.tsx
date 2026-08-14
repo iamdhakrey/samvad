@@ -15,6 +15,7 @@ import { EnvironmentModal } from "./components/EnvironmentModal";
 import { Menu } from "lucide-react";
 import { UpdaterOverlay } from "./components/UpdaterOverlay";
 import Titlebar from "./components/TitleBar";
+import { NewReqSaveModal } from "./components/NewRequestSaveModal";
 
 export default function App() {
   useAuth0Desktop();
@@ -129,6 +130,7 @@ export default function App() {
 
           {/* Mount the Environment Modal here */}
           <EnvironmentModal isMobile={isMobile} />
+          <NewReqSaveModal isMobile={isMobile} />
         </div>
       </div>
     </>

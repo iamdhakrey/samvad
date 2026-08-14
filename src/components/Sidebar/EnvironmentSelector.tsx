@@ -67,10 +67,11 @@ export const EnvironmentSelector: React.FC = () => {
                 setActiveEnvironment(null);
                 setIsOpen(false);
               }}
-              className={`flex items-center gap-2 w-full px-3 py-1.5 text-left text-sm hover:bg-panel hover:text-text-primary transition-colors cursor-pointer ${!activeEnvironmentId
-                ? "text-text-primary bg-panel/40"
-                : "text-text-secondary"
-                }`}
+              className={`flex items-center gap-2 w-full px-3 py-1.5 text-left text-sm hover:bg-panel hover:text-text-primary transition-colors cursor-pointer ${
+                !activeEnvironmentId
+                  ? "text-text-primary bg-panel/40"
+                  : "text-text-secondary"
+              }`}
             >
               <div className="w-4 flex justify-center shrink-0">
                 {!activeEnvironmentId && (
@@ -84,10 +85,11 @@ export const EnvironmentSelector: React.FC = () => {
             {environments.map((env) => (
               <div
                 key={env.environment.id}
-                className={`group flex items-center justify-between px-3 py-1.5 mx-1 my-0.5 rounded-md text-sm text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${env.environment.id === activeEnvironmentId
-                  ? "bg-panel/40 text-text-primary"
-                  : ""
-                  }`}
+                className={`group flex items-center justify-between px-3 py-1.5 mx-1 my-0.5 rounded-md text-sm text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${
+                  env.environment.id === activeEnvironmentId
+                    ? "bg-panel/40 text-text-primary"
+                    : ""
+                }`}
               >
                 <>
                   <button
@@ -136,9 +138,10 @@ export const EnvironmentSelector: React.FC = () => {
                 useVartaStore.getState().openEnvEditor();
                 useWorkspaceStore.getState().setActiveEnvironment(null);
               }}
-              className="flex items-center gap-2 flex-1 text-left truncate cursor-pointer py-0.5"
+              className={`flex items-center gap-2 w-full px-3 py-1.5  text-left text-sm hover:bg-panel hover:text-text-primary transition-colors cursor-pointer  text-text-secondary`}
             >
-              <Edit className="w-3.5 h-3.5 text-text-muted shrink-0" />
+              <div className="w-4 flex justify-center shrink-0"></div>
+              <Edit className="w-3.5 h-3.5  text-text-muted shrink-0" />
               <span className="truncate text-sm">Manage Environment</span>
             </button>
           </div>
