@@ -26,6 +26,8 @@ pub enum HttpMethod {
     Head,
     #[serde(rename = "WS")]
     Ws,
+    #[serde(rename = "QUERY")]
+    Query,
 }
 
 impl HttpMethod {
@@ -38,6 +40,8 @@ impl HttpMethod {
             HttpMethod::Delete => reqwest::Method::DELETE,
             HttpMethod::Options => reqwest::Method::OPTIONS,
             HttpMethod::Head => reqwest::Method::HEAD,
+            HttpMethod::Query => reqwest::Method::QUERY,
+
             HttpMethod::Ws => panic!("WS requests should not go through the HTTP pipeline"),
         }
     }
@@ -52,6 +56,7 @@ impl HttpMethod {
             HttpMethod::Options => "OPTIONS",
             HttpMethod::Head => "HEAD",
             HttpMethod::Ws => "WS",
+            HttpMethod::Query => "QUERY",
         }
     }
 }
@@ -67,6 +72,10 @@ impl FromStr for HttpMethod {
             "PUT" => Ok(HttpMethod::Put),
             "PATCH" => Ok(HttpMethod::Patch),
             "DELETE" => Ok(HttpMethod::Delete),
+            "OPTIONS" => Ok(HttpMethod::Options),
+            "HEAD" => Ok(HttpMethod::Head),
+            "WS" => Ok(HttpMethod::Ws),
+            "QUERY" => Ok(HttpMethod::Query),
             _ => Err(format!("Invalid HTTP method: {}", s)),
         }
     }

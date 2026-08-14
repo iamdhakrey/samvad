@@ -5,17 +5,6 @@ import { useVartaStore } from "../../store/vartaStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { MethodStyles } from "../../types";
 
-const methods: HttpMethod[] = [
-  "GET",
-  "POST",
-  "PUT",
-  "PATCH",
-  "DELETE",
-  "OPTIONS",
-  "HEAD",
-  // "WS",
-];
-
 interface UrlInputProps {
   url: string;
   onChange: (url: string) => void;
@@ -167,7 +156,7 @@ const UrlAutocompleteInput: React.FC<UrlInputProps> = ({
 
   return (
     <div className="relative flex-1 h-full">
-      <div className="relative w-full h-[34px] rounded-md border border-border bg-panel overflow-hidden">
+      <div className="relative w-full h-8.5 rounded-md border border-border bg-panel overflow-hidden">
         {/* UNDERLAY: Colored Text */}
         <div
           ref={overlayRef}
@@ -210,8 +199,9 @@ const UrlAutocompleteInput: React.FC<UrlInputProps> = ({
               <button
                 key={v.id}
                 onClick={() => insertSuggestion(v.key)}
-                className={`flex w-full flex-col px-3 py-1.5 text-left rounded-sm cursor-pointer transition-colors ${index === selectedIndex ? "bg-primary/20" : "hover:bg-panel"
-                  }`}
+                className={`flex w-full flex-col px-3 py-1.5 text-left rounded-sm cursor-pointer transition-colors ${
+                  index === selectedIndex ? "bg-primary/20" : "hover:bg-panel"
+                }`}
               >
                 <span className="text-sm font-mono text-success">{v.key}</span>
                 <span className="text-xs text-text-muted truncate">
@@ -237,6 +227,16 @@ export default function RequestBar({ tab, isMobile }: RequestBarProps) {
   const connectWebSocket = useVartaStore((s) => s.connectWebSocket);
   const disconnectWebSocket = useVartaStore((s) => s.disconnectWebSocket);
 
+  const methods: HttpMethod[] = [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "HEAD",
+    "OPTIONS",
+    "QUERY",
+  ];
   const isWs = tab.request.method === "WS";
   const wsConnected = tab.wsStatus === "connected";
   const wsConnecting = tab.wsStatus === "connecting";
@@ -245,7 +245,11 @@ export default function RequestBar({ tab, isMobile }: RequestBarProps) {
   /** When user picks a method from the dropdown, handle WS ↔ HTTP transitions. */
   const handleMethodChange = (newMethod: HttpMethod) => {
     const patches: Partial<typeof tab.request> = { method: newMethod };
-    if (newMethod === "WS" && !tab.request.url.trim().toLowerCase().startsWith("ws://") && !tab.request.url.trim().toLowerCase().startsWith("wss://")) {
+    if (
+      newMethod === "WS" &&
+      !tab.request.url.trim().toLowerCase().startsWith("ws://") &&
+      !tab.request.url.trim().toLowerCase().startsWith("wss://")
+    ) {
       // Auto-prefix URL for convenience
       const existingUrl = tab.request.url.trim();
       if (existingUrl.startsWith("http://")) {
@@ -255,7 +259,11 @@ export default function RequestBar({ tab, isMobile }: RequestBarProps) {
       } else if (!existingUrl) {
         patches.url = "ws://";
       }
-    } else if (newMethod !== "WS" && (tab.request.url.trim().toLowerCase().startsWith("ws://") || tab.request.url.trim().toLowerCase().startsWith("wss://"))) {
+    } else if (
+      newMethod !== "WS" &&
+      (tab.request.url.trim().toLowerCase().startsWith("ws://") ||
+        tab.request.url.trim().toLowerCase().startsWith("wss://"))
+    ) {
       // Switching away from WS — convert URL back to HTTP
       const existingUrl = tab.request.url.trim();
       if (existingUrl.startsWith("wss://")) {
@@ -367,9 +375,7 @@ export default function RequestBar({ tab, isMobile }: RequestBarProps) {
         <div className="relative">
           <select
             value={tab.request.method}
-            onChange={(e) =>
-              handleMethodChange(e.target.value as HttpMethod)
-            }
+            onChange={(e) => handleMethodChange(e.target.value as HttpMethod)}
             className={`input-shell appearance-none pr-7 font-semibold ${MethodStyles[tab.request.method as HttpMethod]}`}
           >
             {methods.map((m) => (

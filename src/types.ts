@@ -1,5 +1,13 @@
 export type HttpMethod =
-  "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "HEAD" | "WS";
+  | "GET"
+  | "POST"
+  | "PUT"
+  | "PATCH"
+  | "DELETE"
+  | "OPTIONS"
+  | "HEAD"
+  | "WS"
+  | "QUERY";
 
 export type AuthType = "none" | "basic" | "bearer" | "apiKey";
 
@@ -278,7 +286,6 @@ export interface WorkspaceStore {
   setActiveEnvironment: (id: string | null) => Promise<void>;
 }
 
-
 export const MethodStyles: Record<HttpMethod, string> = {
   GET: "text-method-get",
   POST: "text-secondary",
@@ -288,4 +295,5 @@ export const MethodStyles: Record<HttpMethod, string> = {
   OPTIONS: "text-text-muted",
   HEAD: "text-text-muted",
   WS: "text-method-ws",
+  QUERY: "text-method-query",
 };
