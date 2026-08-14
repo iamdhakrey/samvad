@@ -86,12 +86,12 @@ function GraphQLComposer({
   disabled: boolean;
   isMobile: boolean;
 }) {
-  const [query, setQuery] = useState(
-    "subscription {\n  \n}",
-  );
+  const [query, setQuery] = useState("subscription {\n  \n}");
   const [variables, setVariables] = useState("{}");
   const [operationName, setOperationName] = useState("");
-  const [activeField, setActiveField] = useState<"query" | "variables">("query");
+  const [activeField, setActiveField] = useState<"query" | "variables">(
+    "query",
+  );
 
   const handleSend = () => {
     const payload: Record<string, any> = { query };
@@ -117,19 +117,21 @@ function GraphQLComposer({
       <div className="flex items-center gap-1 mb-2">
         <button
           onClick={() => setActiveField("query")}
-          className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${activeField === "query"
-            ? "bg-primary/20 text-primary"
-            : "text-text-muted hover:text-text-secondary"
-            }`}
+          className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+            activeField === "query"
+              ? "bg-primary/20 text-primary"
+              : "text-text-muted hover:text-text-secondary"
+          }`}
         >
           Query
         </button>
         <button
           onClick={() => setActiveField("variables")}
-          className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${activeField === "variables"
-            ? "bg-primary/20 text-primary"
-            : "text-text-muted hover:text-text-secondary"
-            }`}
+          className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+            activeField === "variables"
+              ? "bg-primary/20 text-primary"
+              : "text-text-muted hover:text-text-secondary"
+          }`}
         >
           Variables
         </button>
@@ -148,7 +150,7 @@ function GraphQLComposer({
             onChange={(e) => setQuery(e.target.value)}
             disabled={disabled}
             placeholder="subscription { newMessage { id content } }"
-            className="input-shell flex-1 resize-none font-mono text-xs min-h-[80px] max-h-[160px] disabled:opacity-50"
+            className="input-shell flex-1 resize-none font-mono text-xs min-h-20 max-h-40 disabled:opacity-50"
             rows={4}
             spellCheck={false}
           />
@@ -158,7 +160,7 @@ function GraphQLComposer({
             onChange={(e) => setVariables(e.target.value)}
             disabled={disabled}
             placeholder='{ "key": "value" }'
-            className="input-shell flex-1 resize-none font-mono text-xs min-h-[80px] max-h-[160px] disabled:opacity-50"
+            className="input-shell flex-1 resize-none font-mono text-xs min-h-20 max-h-40 disabled:opacity-50"
             rows={4}
             spellCheck={false}
           />
@@ -343,10 +345,11 @@ export default function WebSocketPanel({
     return (
       <div
         key={i}
-        className={`group flex gap-2 rounded-md border px-3 py-2 text-sm font-mono transition-colors ${isSent
-          ? "border-primary/20 bg-primary/5"
-          : "border-secondary/20 bg-secondary/5"
-          }`}
+        className={`group flex gap-2 rounded-md border px-3 py-2 text-sm font-mono transition-colors ${
+          isSent
+            ? "border-primary/20 bg-primary/5"
+            : "border-secondary/20 bg-secondary/5"
+        }`}
       >
         <div className="shrink-0 pt-0.5">
           {isSent ? (
@@ -376,25 +379,28 @@ export default function WebSocketPanel({
     <div className="flex h-full flex-col">
       {/* Status bar */}
       <div
-        className={`flex items-center gap-3 border-b border-border bg-panel text-sm ${isMobile ? "px-3 py-2" : "px-4 py-2"
-          }`}
+        className={`flex items-center gap-3 border-b border-border bg-panel text-sm ${
+          isMobile ? "px-3 py-2" : "px-4 py-2"
+        }`}
       >
         <div className="flex items-center gap-2">
           <div
-            className={`h-2 w-2 rounded-full ${isConnected
-              ? "bg-success animate-pulse"
-              : isConnecting
-                ? "bg-warning animate-pulse"
-                : "bg-text-muted"
-              }`}
+            className={`h-2 w-2 rounded-full ${
+              isConnected
+                ? "bg-success animate-pulse"
+                : isConnecting
+                  ? "bg-warning animate-pulse"
+                  : "bg-text-muted"
+            }`}
           />
           <span
-            className={`font-medium ${isConnected
-              ? "text-success"
-              : isConnecting
-                ? "text-warning"
-                : "text-text-muted"
-              }`}
+            className={`font-medium ${
+              isConnected
+                ? "text-success"
+                : isConnecting
+                  ? "text-warning"
+                  : "text-text-muted"
+            }`}
           >
             {isConnected
               ? "Connected"
@@ -423,20 +429,22 @@ export default function WebSocketPanel({
           <div className="ml-auto flex items-center gap-1">
             <button
               onClick={() => setWsProtocol("raw")}
-              className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${!isGraphqlWs
-                ? "bg-primary/20 text-primary"
-                : "text-text-muted hover:text-text-secondary"
-                }`}
+              className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                !isGraphqlWs
+                  ? "bg-primary/20 text-primary"
+                  : "text-text-muted hover:text-text-secondary"
+              }`}
             >
               <Globe size={10} />
               Raw
             </button>
             <button
               onClick={() => setWsProtocol("graphql-ws")}
-              className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${isGraphqlWs
-                ? "bg-primary/20 text-primary"
-                : "text-text-muted hover:text-text-secondary"
-                }`}
+              className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                isGraphqlWs
+                  ? "bg-primary/20 text-primary"
+                  : "text-text-muted hover:text-text-secondary"
+              }`}
             >
               <Zap size={10} />
               GraphQL
@@ -454,8 +462,9 @@ export default function WebSocketPanel({
 
       {/* Sub tabs */}
       <div
-        className={`flex gap-1 border-b border-border ${isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
-          }`}
+        className={`flex gap-1 border-b border-border ${
+          isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
+        }`}
       >
         <button
           onClick={() => setSubTab("messages")}
@@ -516,7 +525,7 @@ export default function WebSocketPanel({
                         ? "Type a message… (Enter to send, Shift+Enter for newline)"
                         : "Connect first to send messages"
                     }
-                    className="input-shell flex-1 resize-none font-mono text-xs min-h-[60px] max-h-[120px] disabled:opacity-50"
+                    className="input-shell flex-1 resize-none font-mono text-xs min-h-15 max-h-30 disabled:opacity-50"
                     rows={2}
                   />
                   <div className="flex flex-col gap-1.5">
@@ -578,7 +587,7 @@ export default function WebSocketPanel({
                   value={newMsgData}
                   onChange={(e) => setNewMsgData(e.target.value)}
                   placeholder="Message payload"
-                  className="input-shell w-full resize-none font-mono text-xs min-h-[60px]"
+                  className="input-shell w-full resize-none font-mono text-xs min-h-15"
                   rows={3}
                 />
                 <div className="flex justify-end gap-2">

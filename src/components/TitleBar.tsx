@@ -41,10 +41,10 @@ export default function Titlebar() {
         <button className="inline-flex h-full w-12 items-center justify-center transition hover:bg-surface-900/50 hover:text-text-primary">
           {activeTab?.request.name ? (
             <div className="flex items-center gap-2">
-              <span className="max-w-[100px] truncate text-sm font-medium">
+              <span className="max-w-25 truncate text-sm font-medium">
                 {activeTab.request.method} :
               </span>
-              <span className="max-w-[100px] truncate text-sm font-medium">
+              <span className="max-w-25 truncate text-sm font-medium">
                 {activeTab.request.name}
               </span>
             </div>
