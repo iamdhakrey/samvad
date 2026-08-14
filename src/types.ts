@@ -80,6 +80,8 @@ export interface ApiRequest {
   id: string;
   name: string;
   method: string;
+  collection_id: string;
+  folder_id: string | null;
   url: string;
   params: KeyValueRow[]; // Must be a sequence (array)
   headers: KeyValueRow[]; // Must be a sequence (array)

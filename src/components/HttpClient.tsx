@@ -24,13 +24,25 @@ export const HttpClient: React.FC = () => {
         const mappedFiles: ApiFile[] = selected.map((filePath) => {
           // Extract file name from absolute path
           const name = filePath.split(/[/\\]/).pop() || "file";
-          return { name, path: filePath, sizeBytes: 0, id: "file_" + Date.now() };
+          return {
+            name,
+            path: filePath,
+            sizeBytes: 0,
+            id: "file_" + Date.now(),
+          };
         });
         setSelectedFiles(mappedFiles);
       } else if (selected) {
         // Single file selected (if multiple: false)
         const name = (selected as string).split(/[/\\]/).pop() || "file";
-        setSelectedFiles([{ name, path: selected as string , sizeBytes: 0, id: "file_" + Date.now() }]);
+        setSelectedFiles([
+          {
+            name,
+            path: selected as string,
+            sizeBytes: 0,
+            id: "file_" + Date.now(),
+          },
+        ]);
       }
     } catch (err) {
       console.error("Failed to open file dialog:", err);
@@ -59,6 +71,8 @@ export const HttpClient: React.FC = () => {
         raw: undefined,
         json: undefined,
       },
+      collection_id: "",
+      folder_id: null,
     };
 
     try {

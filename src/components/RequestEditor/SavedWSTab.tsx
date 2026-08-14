@@ -62,7 +62,7 @@ function SavedWSTab({ tab, isMobile }: { tab: RequestTab; isMobile: boolean }) {
             value={newMsgData}
             onChange={(e) => setNewMsgData(e.target.value)}
             placeholder="Message payload"
-            className="input-shell w-full resize-none font-mono text-xs min-h-[60px]"
+            className="input-shell w-full resize-none font-mono text-xs min-h-15"
             rows={3}
           />
           <div className="flex justify-end gap-2">
