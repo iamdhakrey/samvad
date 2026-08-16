@@ -1,6 +1,6 @@
-use crate::db::{new_id, now_iso, read_yaml, write_yaml, DataDir};
-use crate::error::AppResult;
-use crate::models::Workspace;
+use samvad_db::{new_id, now_iso, read_yaml, write_yaml, DataDir};
+use samvad_error::AppResult;
+use samvad_models::Workspace;
 
 pub fn list_workspaces(dd: &DataDir) -> AppResult<Vec<Workspace>> {
     let ws_dir = dd.workspaces_dir();

@@ -1,9 +1,6 @@
-use crate::{
-    db,
-    error::AppResult,
-    models::{ActiveState, Workspace},
-    state::AppState,
-};
+use crate::{db, state::AppState};
+use samvad_error::AppResult;
+use samvad_models::{ActiveState, Workspace};
 use tauri::State;
 
 #[tauri::command]

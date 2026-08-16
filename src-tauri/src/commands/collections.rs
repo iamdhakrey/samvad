@@ -1,15 +1,14 @@
+use samvad_error::AppResult;
 use tauri::State;
 
-use crate::{
-    models::{Collection, CollectionTree, Folder},
-    state::AppState,
-};
+use crate::state::AppState;
+use samvad_models::{ApiRequest, Collection, CollectionTree, Folder};
 
 #[tauri::command]
 pub async fn get_collection_trees(
     state: State<'_, AppState>,
     workspaceid: String,
-) -> crate::error::AppResult<Vec<CollectionTree>> {
+) -> AppResult<Vec<CollectionTree>> {
     crate::db::collections::get_collection_trees(&state.data_dir, &workspaceid)
 }
 
@@ -18,7 +17,7 @@ pub async fn create_collection(
     state: State<'_, AppState>,
     workspaceid: String,
     name: String,
-) -> crate::error::AppResult<Collection> {
+) -> AppResult<Collection> {
     println!(
         "Creating collection '{}' in workspace '{}'",
         name, workspaceid
@@ -31,15 +30,12 @@ pub async fn rename_collection(
     state: State<'_, AppState>,
     collectionid: String,
     name: String,
-) -> crate::error::AppResult<()> {
+) -> AppResult<()> {
     crate::db::collections::rename_collection(&state.data_dir, &collectionid, &name)
 }
 
 #[tauri::command]
-pub async fn delete_collection(
-    state: State<'_, AppState>,
-    collectionid: String,
-) -> crate::error::AppResult<()> {
+pub async fn delete_collection(state: State<'_, AppState>, collectionid: String) -> AppResult<()> {
     crate::db::collections::delete_collection(&state.data_dir, &collectionid)
 }
 
@@ -47,7 +43,7 @@ pub async fn delete_collection(
 pub async fn clone_collection(
     state: State<'_, AppState>,
     collectionid: String,
-) -> crate::error::AppResult<Collection> {
+) -> AppResult<Collection> {
     crate::db::collections::clone_collection(&state.data_dir, &collectionid)
 }
 
@@ -57,7 +53,7 @@ pub async fn create_folder(
     collectionid: String,
     parentfolderid: Option<String>,
     name: String,
-) -> crate::error::AppResult<Folder> {
+) -> AppResult<Folder> {
     println!("Creating folder '{}' in workspace '{}'", name, collectionid);
     // parentfolderid: Option<&str>
     crate::db::collections::create_folder(
@@ -69,10 +65,7 @@ pub async fn create_folder(
 }
 
 #[tauri::command]
-pub async fn delete_folder(
-    state: State<'_, AppState>,
-    folderid: String,
-) -> crate::error::AppResult<()> {
+pub async fn delete_folder(state: State<'_, AppState>, folderid: String) -> AppResult<()> {
     crate::db::collections::delete_folder(&state.data_dir, &folderid)
 }
 
@@ -82,15 +75,12 @@ pub async fn rename_folder(
     collectionid: String,
     folderid: String,
     name: String,
-) -> crate::error::AppResult<()> {
+) -> AppResult<()> {
     crate::db::collections::rename_folder(&state.data_dir, &collectionid, &folderid, &name)
 }
 
 #[tauri::command]
-pub async fn get_request(
-    state: State<'_, AppState>,
-    requestid: String,
-) -> crate::error::AppResult<crate::models::ApiRequest> {
+pub async fn get_request(state: State<'_, AppState>, requestid: String) -> AppResult<ApiRequest> {
     crate::db::collections::get_request(&state.data_dir, &requestid)
 }
 
@@ -100,7 +90,7 @@ pub async fn create_request(
     collectionid: String,
     folderid: Option<String>,
     name: String,
-) -> crate::error::AppResult<crate::models::ApiRequest> {
+) -> AppResult<ApiRequest> {
     crate::db::collections::create_request(
         &state.data_dir,
         &collectionid,
@@ -115,7 +105,7 @@ pub async fn create_ws_request(
     collectionid: String,
     folderid: Option<String>,
     name: String,
-) -> crate::error::AppResult<crate::models::ApiRequest> {
+) -> AppResult<ApiRequest> {
     crate::db::collections::create_ws_request(
         &state.data_dir,
         &collectionid,
@@ -125,10 +115,7 @@ pub async fn create_ws_request(
 }
 
 #[tauri::command]
-pub async fn delete_request(
-    state: State<'_, AppState>,
-    requestid: String,
-) -> crate::error::AppResult<()> {
+pub async fn delete_request(state: State<'_, AppState>, requestid: String) -> AppResult<()> {
     crate::db::collections::delete_request(&state.data_dir, &requestid)
 }
 
@@ -137,7 +124,7 @@ pub async fn rename_request(
     state: State<'_, AppState>,
     requestid: String,
     name: String,
-) -> crate::error::AppResult<()> {
+) -> AppResult<()> {
     crate::db::collections::rename_request(&state.data_dir, &requestid, &name)
 }
 
@@ -145,14 +132,11 @@ pub async fn rename_request(
 pub async fn duplicate_request(
     state: State<'_, AppState>,
     requestid: String,
-) -> crate::error::AppResult<crate::models::ApiRequest> {
+) -> AppResult<ApiRequest> {
     crate::db::collections::duplicate_request(&state.data_dir, &requestid)
 }
 
 #[tauri::command]
-pub async fn save_request(
-    state: State<'_, AppState>,
-    request: crate::models::ApiRequest,
-) -> crate::error::AppResult<()> {
+pub async fn save_request(state: State<'_, AppState>, request: ApiRequest) -> AppResult<()> {
     crate::db::collections::save_request(&state.data_dir, &request)
 }

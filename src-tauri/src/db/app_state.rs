@@ -1,16 +1,6 @@
-use crate::db::{read_yaml_or_default, write_yaml, DataDir};
-use crate::error::AppResult;
-use crate::models::ActiveState;
-
-impl Default for ActiveState {
-    fn default() -> Self {
-        Self {
-            active_workspace_id: None,
-            active_environment_id: None,
-            active_theme_id: None,
-        }
-    }
-}
+use samvad_db::{read_yaml_or_default, write_yaml, DataDir};
+use samvad_error::AppResult;
+use samvad_models::ActiveState;
 
 pub fn get_active_state(dd: &DataDir) -> AppResult<ActiveState> {
     read_yaml_or_default(&dd.app_state_path())
