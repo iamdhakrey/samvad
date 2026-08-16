@@ -56,7 +56,7 @@ jobs:
         run: bun run build 
 
       - name: Check Rust Formatting
-        run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+        run: cargo fmt --check
 
       # - name: Lint Rust Core (Clippy)
       #   run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
