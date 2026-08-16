@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::db::{now_iso, read_yaml_vec, write_yaml, DataDir};
-use crate::error::{AppError, AppResult};
-use crate::models::{PluginManifest, PluginRecord};
+use samvad_db::{now_iso, read_yaml_vec, write_yaml, DataDir};
+use samvad_error::{AppError, AppResult};
+use samvad_models::{PluginManifest, PluginRecord};
 
 /// YAML-persisted plugin entry (replaces the old SQL row).
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -7,10 +7,9 @@ use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::{connect_async_tls_with_config, Connector};
 
 use crate::db;
-use crate::error::{AppError, AppResult};
-use crate::models::AppSettings;
-use crate::models::{WsEvent, WsSavedMessage};
 use crate::state::AppState;
+use samvad_error::{AppError, AppResult};
+use samvad_models::{AppSettings, WsEvent, WsSavedMessage};
 
 use rustls::client::danger::{HandshakeSignatureValid, ServerCertVerifier};
 use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
@@ -128,7 +127,7 @@ pub async fn ws_connect(
 
     let (mut write, mut read) = ws_stream.split();
 
-    let connection_id = db::new_id();
+    let connection_id = samvad_db::new_id();
     let cid = connection_id.clone();
 
     // Create an mpsc channel: the `ws_send` command writes to `tx`,
@@ -164,7 +163,7 @@ pub async fn ws_connect(
                                     connection_id: cid_for_task.clone(),
                                     direction: "closed".to_string(),
                                     data: String::new(),
-                                    timestamp: db::now_iso(),
+                                    timestamp: samvad_db::now_iso(),
                                 });
                                 break;
                             }
@@ -176,7 +175,7 @@ pub async fn ws_connect(
                                     connection_id: cid_for_task.clone(),
                                     direction: "received".to_string(),
                                     data,
-                                    timestamp: db::now_iso(),
+                                    timestamp: samvad_db::now_iso(),
                                 });
                             }
                         }
@@ -234,7 +233,7 @@ pub async fn ws_send(
             connection_id,
             direction: "sent".to_string(),
             data: message,
-            timestamp: db::now_iso(),
+            timestamp: samvad_db::now_iso(),
         },
     );
 

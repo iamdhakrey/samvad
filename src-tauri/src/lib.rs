@@ -1,5 +1,8 @@
+use std::sync::Arc;
 use tauri::{Emitter, Manager, Window};
 use tauri_plugin_oauth::start;
+
+use tokio::sync::Mutex;
 
 use crate::commands::collections::{
     clone_collection, create_collection, create_folder, create_request, create_ws_request,
@@ -21,6 +24,8 @@ use crate::ws::{
     ws_add_saved_message, ws_connect, ws_delete_saved_message, ws_disconnect,
     ws_list_saved_messages, ws_send, ws_update_saved_message,
 };
+
+use crate::commands::auth::{self, PkceSessionState};
 
 use crate::commands::history::{clear_history, delete_history_entry, list_history};
 
@@ -65,12 +70,14 @@ pub fn run() {
                 .expect("resolve app data dir");
             std::fs::create_dir_all(&data_dir).expect("create app data dir");
 
-            let data_dir = db::init_data_dir(&data_dir).expect("initialize data directory");
+            let data_dir = samvad_db::init_data_dir(&data_dir).expect("initialize data directory");
 
             app_handle.manage(AppState {
                 data_dir,
                 ws_connections: Default::default(),
             });
+
+            app_handle.manage::<PkceSessionState>(Arc::new(Mutex::new(None)));
 
             Ok(())
         })
@@ -126,7 +133,15 @@ pub fn run() {
             // add_entry,
             list_history,
             clear_history,
-            delete_history_entry
+            delete_history_entry,
+            //auth
+            auth::get_current_user,
+            auth::get_access_token,
+            auth::is_authenticated,
+            auth::get_auth_state,
+            auth::auth_start_login,
+            auth::auth_handle_callback,
+            auth::auth_logout,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Samvad application");
