@@ -1,6 +1,5 @@
 import { AuthTokens } from '@samvad-internal/models';
 import { create } from 'zustand';
-// import AuthTokens  from '@samvad-internal/models';
 
 // Types mirror the Rust AuthState / User / AuthTokens structs (camelCase via serde)
 export interface User {
