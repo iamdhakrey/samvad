@@ -1,4 +1,6 @@
+import { AuthTokens } from '@samvad-internal/models';
 import { create } from 'zustand';
+// import AuthTokens  from '@samvad-internal/models';
 
 // Types mirror the Rust AuthState / User / AuthTokens structs (camelCase via serde)
 export interface User {
@@ -10,13 +12,13 @@ export interface User {
 }
 
 // Rust serializes AuthTokens with camelCase via #[serde(rename_all = "camelCase")]
-export interface AuthTokens {
-    accessToken: string;
-    refreshToken?: string;
-    idToken?: string;
-    expiresIn: number;
-    expiresAt: number;
-}
+// export interface AuthTokens {
+//     accessToken: string;
+//     refreshToken?: string;
+//     idToken?: string;
+//     expiresIn: number;
+//     expiresAt: number;
+// }
 
 interface AuthState {
     // State

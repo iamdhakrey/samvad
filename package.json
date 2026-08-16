@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri"
   },
+  "workspaces": ["crates/samvad-models"],
   "dependencies": {
     "@fabianlars/tauri-plugin-oauth": "2",
     "@monaco-editor/react": "^4.7.0",
@@ -20,6 +21,7 @@
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-store": "^2.4.4",
     "@tauri-apps/plugin-updater": "^2.10.1",
+    "@samvad-internal/models": "1.0.0",
     "lucide-react": "^1.21.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
