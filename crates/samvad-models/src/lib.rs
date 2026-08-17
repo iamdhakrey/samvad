@@ -506,6 +506,9 @@ pub struct ActiveState {
     pub active_workspace_id: Option<String>,
     pub active_environment_id: Option<String>,
     pub active_theme_id: Option<String>,
+    pub active_collection_id: Option<String>,
+    pub active_folder_id: Option<String>,
+    pub active_request_id: Option<String>,
 }
 
 impl Default for ActiveState {
@@ -514,6 +517,9 @@ impl Default for ActiveState {
             active_workspace_id: None,
             active_environment_id: None,
             active_theme_id: None,
+            active_collection_id: None,
+            active_folder_id: None,
+            active_request_id: None,
         }
     }
 }

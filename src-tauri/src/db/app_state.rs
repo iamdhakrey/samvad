@@ -23,3 +23,15 @@ pub fn set_active_theme(dd: &DataDir, theme_id: &str) -> AppResult<()> {
     state.active_theme_id = Some(theme_id.to_string());
     write_yaml(&dd.app_state_path(), &state)
 }
+
+pub fn set_active_request(dd: &DataDir, request_id: Option<&str>) -> AppResult<()> {
+    let mut state = get_active_state(dd)?;
+    state.active_request_id = request_id.map(str::to_string);
+    write_yaml(&dd.app_state_path(), &state)
+}
+
+pub fn set_active_collection(dd: &DataDir, collection_id: Option<&str>) -> AppResult<()> {
+    let mut state = get_active_state(dd)?;
+    state.active_collection_id = collection_id.map(str::to_string);
+    write_yaml(&dd.app_state_path(), &state)
+}
