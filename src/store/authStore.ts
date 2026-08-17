@@ -1,6 +1,8 @@
+import { AuthTokens } from '@samvad-internal/models';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+// import AuthTokens  from '@samvad-internal/models';
 
+// Types mirror the Rust AuthState / User / AuthTokens structs (camelCase via serde)
 export interface User {
     sub: string;
     name?: string;
@@ -9,19 +11,19 @@ export interface User {
     updated_at?: string;
 }
 
-export interface AuthTokens {
-    accessToken: string;
-    refreshToken?: string;
-    idToken?: string;
-    expiresIn: number;
-    expiresAt: number;
-}
+// Rust serializes AuthTokens with camelCase via #[serde(rename_all = "camelCase")]
+// export interface AuthTokens {
+//     accessToken: string;
+//     refreshToken?: string;
+//     idToken?: string;
+//     expiresIn: number;
+//     expiresAt: number;
+// }
 
 interface AuthState {
     // State
     user: User | null;
     tokens: AuthTokens | null;
-    isAuthenticated: boolean;
     isLoading: boolean;
     error: string | null;
 
@@ -31,63 +33,27 @@ interface AuthState {
     setIsLoading: (loading: boolean) => void;
     setError: (error: string | null) => void;
     logout: () => void;
-    isTokenExpired: () => boolean;
-    getAccessToken: () => string | null;
 }
 
-export const useAuthStore = create<AuthState>()(
-    persist(
-        (set, get) => ({
-            user: null,
-            tokens: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null,
+// No persistence here — Rust's auth.yaml is the source of truth.
+// On startup, useAuth0Desktop calls invoke("get_auth_state") to hydrate this store.
+export const useAuthStore = create<AuthState>()((set) => ({
+    user: null,
+    tokens: null,
+    isLoading: false,
+    error: null,
 
-            setUser: (user) => {
-                set({ user, isAuthenticated: !!user });
-            },
+    setUser: (user) => set({ user }),
 
-            setTokens: (tokens) => {
-                set({ tokens, isAuthenticated: !!tokens });
-            },
+    setTokens: (tokens) => set({ tokens }),
 
-            setIsLoading: (isLoading) => set({ isLoading }),
+    setIsLoading: (isLoading) => set({ isLoading }),
 
-            setError: (error) => set({ error }),
+    setError: (error) => set({ error }),
 
-            logout: () => {
-                set({
-                    user: null,
-                    tokens: null,
-                    isAuthenticated: false,
-                    error: null,
-                });
-            },
-
-            isTokenExpired: () => {
-                const { tokens } = get();
-                if (!tokens) return true;
-                return Date.now() >= tokens.expiresAt;
-            },
-
-            getAccessToken: () => {
-                const { tokens } = get();
-                if (!tokens) return null;
-                // Check if token is expired
-                if (Date.now() >= tokens.expiresAt) {
-                    return null; // Token expired, needs refresh
-                }
-                return tokens.accessToken;
-            },
-        }),
-        {
-            name: 'auth-storage', // Name of the storage item
-            partialize: (state) => ({
-                user: state.user,
-                tokens: state.tokens,
-                isAuthenticated: state.isAuthenticated,
-            }),
-        }
-    )
-);
+    logout: () => set({
+        user: null,
+        tokens: null,
+        error: null,
+    }),
+}));

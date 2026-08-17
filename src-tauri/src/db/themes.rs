@@ -1,6 +1,6 @@
-use crate::db::{read_yaml_vec, write_yaml, DataDir};
-use crate::error::{AppError, AppResult};
-use crate::models::{Theme, ThemeTokens};
+use samvad_db::{read_yaml_vec, write_yaml, DataDir};
+use samvad_error::{AppError, AppResult};
+use samvad_models::{Theme, ThemeTokens};
 
 pub fn list_themes(dd: &DataDir) -> AppResult<Vec<Theme>> {
     let mut themes: Vec<Theme> = read_yaml_vec(&dd.themes_path())?;
@@ -27,7 +27,7 @@ pub fn save_custom_theme(
     name: &str,
     tokens: &ThemeTokens,
 ) -> AppResult<Theme> {
-    let id = id.map(str::to_string).unwrap_or_else(crate::db::new_id);
+    let id = id.map(str::to_string).unwrap_or_else(samvad_db::new_id);
     let mut themes: Vec<Theme> = read_yaml_vec(&dd.themes_path())?;
 
     if let Some(existing) = themes.iter_mut().find(|t| t.id == id) {

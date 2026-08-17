@@ -1,0 +1,11 @@
+[package]
+name = "samvad-error"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+serde_yaml = "0.9.34"
+thiserror = "2.0.20"
+tokio-tungstenite = "0.30.0"

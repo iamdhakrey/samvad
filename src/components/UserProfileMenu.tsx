@@ -16,9 +16,8 @@ function getInitials(name?: string, email?: string): string {
 }
 
 export function UserProfileMenu() {
-  const { login, logout } = useAuth0Desktop();
+  const { login, logout, isAuthenticated } = useAuth0Desktop();
   const user = useAuthStore((s) => s.user);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
 
   const [open, setOpen] = useState(false);

@@ -1,15 +1,14 @@
+use samvad_error::AppResult;
 use tauri::State;
 
-use crate::{
-    models::{Environment, EnvironmentVariable, EnvironmentWithVariables},
-    state::AppState,
-};
+use crate::state::AppState;
+use samvad_models::{Environment, EnvironmentVariable, EnvironmentWithVariables};
 
 #[tauri::command]
 pub async fn list_environments(
     state: State<'_, AppState>,
     workspaceid: String,
-) -> crate::error::AppResult<Vec<EnvironmentWithVariables>> {
+) -> AppResult<Vec<EnvironmentWithVariables>> {
     crate::db::environments::list_environments(&state.data_dir, &workspaceid)
 }
 
@@ -18,7 +17,7 @@ pub async fn list_variables(
     state: State<'_, AppState>,
     workspaceid: String,
     environmentid: String,
-) -> crate::error::AppResult<Vec<EnvironmentVariable>> {
+) -> AppResult<Vec<EnvironmentVariable>> {
     crate::db::environments::list_variables(&state.data_dir, &workspaceid, &environmentid)
 }
 
@@ -27,7 +26,7 @@ pub async fn create_environment(
     state: State<'_, AppState>,
     workspaceid: String,
     name: String,
-) -> crate::error::AppResult<Environment> {
+) -> AppResult<Environment> {
     crate::db::environments::create_environment(&state.data_dir, &workspaceid, &name)
 }
 
@@ -36,7 +35,7 @@ pub async fn rename_environment(
     state: State<'_, AppState>,
     environmentid: String,
     name: String,
-) -> crate::error::AppResult<()> {
+) -> AppResult<()> {
     crate::db::environments::rename_environment(&state.data_dir, &environmentid, &name)
 }
 
@@ -44,7 +43,7 @@ pub async fn rename_environment(
 pub async fn delete_environment(
     state: State<'_, AppState>,
     environmentid: String,
-) -> crate::error::AppResult<()> {
+) -> AppResult<()> {
     crate::db::environments::delete_environment(&state.data_dir, &environmentid)
 }
 
@@ -53,7 +52,7 @@ pub async fn replace_variables(
     state: State<'_, AppState>,
     environmentid: String,
     variables: Vec<EnvironmentVariable>,
-) -> crate::error::AppResult<()> {
+) -> AppResult<()> {
     crate::db::environments::replace_variables(&state.data_dir, &environmentid, &variables)
 }
 
@@ -63,6 +62,6 @@ pub async fn replace_variables(
 pub async fn set_active_environment(
     state: State<'_, AppState>,
     environmentid: Option<String>,
-) -> crate::error::AppResult<()> {
+) -> AppResult<()> {
     crate::db::app_state::set_active_environment(&state.data_dir, environmentid.as_deref())
 }

@@ -18,6 +18,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+samvad-models = {path= "../crates/samvad-models"}
+samvad-error = {path= "../crates/samvad-error"}
+samvad-db = {path= "../crates/samvad-db"}
+samvad-auth = {path= "../crates/samvad-auth"}
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
 tauri-plugin-oauth = "2"
@@ -38,9 +42,11 @@ rustls = "0.23.43"
 tauri-plugin-dialog = "2.7.2"
 tauri-plugin-process = "2.3.1"
 tauri-plugin-store = "2.4.4"
+rand = "0.10.2"
+sha2 = "0.11.0"
+base64 = "0.23.1"
+urlencoding = "2.1.3"
 
-[profile.release]
-codegen-units = 1
 
 [features]
 default = []

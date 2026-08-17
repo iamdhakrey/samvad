@@ -1,0 +1,7 @@
+{
+  "name": "@samvad-internal/models",
+  "version": "1.0.0",
+  "private": true,
+  "main": "entry/index.ts",
+  "types": "entry/index.ts"
+}

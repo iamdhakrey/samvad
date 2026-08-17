@@ -5,8 +5,8 @@ use std::time::{Duration, Instant};
 use tauri::State;
 
 use crate::db;
-use crate::error::{AppError, AppResult};
-use crate::models::{
+use samvad_error::{AppError, AppResult};
+use samvad_models::{
     ApiKeyTarget, ApiRequest, ApiResponse, AppSettings, AuthType, BodyMode, CookieRow,
 };
 
@@ -38,7 +38,7 @@ pub async fn send_request(
     let interpolated = interpolate_request(&request, &env_vars);
 
     // WebSocket requests should never go through the HTTP pipeline.
-    if interpolated.method == crate::models::HttpMethod::Ws {
+    if interpolated.method == samvad_models::HttpMethod::Ws {
         return Err(AppError::Invalid(
             "WebSocket requests cannot be sent via HTTP — use the WebSocket panel instead".into(),
         ));

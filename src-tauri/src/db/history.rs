@@ -1,6 +1,6 @@
-use crate::db::{new_id, now_iso, read_yaml_vec, write_yaml, DataDir};
-use crate::error::AppResult;
-use crate::models::{HistoryEntry, HttpMethod};
+use samvad_db::{new_id, now_iso, read_yaml_vec, write_yaml, DataDir};
+use samvad_error::AppResult;
+use samvad_models::{HistoryEntry, HttpMethod};
 
 pub fn add_entry(
     dd: &DataDir,
