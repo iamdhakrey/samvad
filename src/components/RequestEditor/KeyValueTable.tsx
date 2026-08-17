@@ -1,5 +1,5 @@
+import { KeyValueRow } from "@samvad-internal/models";
 import { Plus, Trash2 } from "lucide-react";
-import { KeyValueRow } from "../../types";
 
 const COMMON_HEADERS = [
   "Authorization",

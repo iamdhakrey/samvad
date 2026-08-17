@@ -1,5 +1,5 @@
+import { CookieRow } from "@samvad-internal/models";
 import { Plus, Trash2 } from "lucide-react";
-import { CookieRow } from "../../types";
 
 interface Props {
   rows: CookieRow[];
@@ -7,7 +7,11 @@ interface Props {
   isMobile?: boolean;
 }
 
-export default function CookiesTab({ rows, onChange, isMobile = false }: Props) {
+export default function CookiesTab({
+  rows,
+  onChange,
+  isMobile = false,
+}: Props) {
   function update(id: string, patch: Partial<CookieRow>) {
     onChange(rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   }
@@ -37,7 +41,9 @@ export default function CookiesTab({ rows, onChange, isMobile = false }: Props) 
             className="mb-2 rounded-md border border-border bg-panel p-2.5"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-text-muted font-medium">Cookie</span>
+              <span className="text-xs text-text-muted font-medium">
+                Cookie
+              </span>
               <button
                 onClick={() => removeRow(row.id)}
                 aria-label="Remove cookie"

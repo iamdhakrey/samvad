@@ -6,7 +6,7 @@ use std::{collections::BTreeMap, str::FromStr};
 // ── Models ──────────────────────────────────────────────────────────────
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "User.ts")]
+#[ts(export, export_to = "models.ts")]
 pub struct AuthTokens {
     pub access_token: String,
     pub refresh_token: Option<String>,
@@ -15,19 +15,25 @@ pub struct AuthTokens {
     pub expires_at: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct User {
     pub sub: String,
+    #[ts(optional)]
     pub name: Option<String>,
+    #[ts(optional)]
     pub email: Option<String>,
+    #[ts(optional)]
     pub picture: Option<String>,
+    #[ts(optional)]
     pub updated_at: Option<String>,
 }
 
 /// Persistent auth state saved to `auth.yaml`.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct AuthState {
     pub user: Option<User>,
     pub tokens: Option<AuthTokens>,
@@ -45,7 +51,8 @@ pub struct PkceSession {
 // Requests
 // ---------------------------------------------------------------------
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[ts(export, export_to = "models.ts")]
 pub enum HttpMethod {
     #[serde(rename = "GET")]
     Get,
@@ -118,7 +125,8 @@ impl FromStr for HttpMethod {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[ts(export, export_to = "models.ts")]
 pub struct KeyValueRow {
     pub id: String,
     pub key: String,
@@ -126,7 +134,8 @@ pub struct KeyValueRow {
     pub enabled: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[ts(export, export_to = "models.ts")]
 pub struct CookieRow {
     pub id: String,
     pub name: String,
@@ -134,35 +143,40 @@ pub struct CookieRow {
     pub domain: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct BasicAuth {
     pub username: String,
     pub password: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "models.ts")]
 pub struct BearerAuth {
     pub token: String,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub enum ApiKeyTarget {
     Header,
     Query,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct ApiKeyAuth {
     pub key: String,
     pub value: String,
     pub add_to: ApiKeyTarget,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub enum AuthType {
     #[default]
     None,
@@ -171,8 +185,9 @@ pub enum AuthType {
     ApiKey,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct AuthConfig {
     #[serde(rename = "type")]
     pub auth_type: AuthType,
@@ -181,8 +196,9 @@ pub struct AuthConfig {
     pub api_key: Option<ApiKeyAuth>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct UploadedFile {
     pub id: String,
     pub name: String,
@@ -193,8 +209,9 @@ pub struct UploadedFile {
     pub path: String,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, TS)]
 #[serde(rename_all = "kebab-case")]
+#[ts(export, export_to = "models.ts")]
 pub enum BodyMode {
     Json,
     FormData,
@@ -203,17 +220,24 @@ pub enum BodyMode {
     Multipart,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct RequestBody {
     pub mode: Option<BodyMode>,
+    #[ts(optional)]
     pub raw: Option<String>,
+    #[ts(optional)]
     pub form_data: Option<Vec<KeyValueRow>>,
+    #[ts(optional)]
     pub url_encoded: Option<Vec<KeyValueRow>>,
+    #[ts(optional)]
     pub files: Option<Vec<UploadedFile>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct ApiRequest {
     pub id: String,
     #[serde(default)]
@@ -230,8 +254,9 @@ pub struct ApiRequest {
     pub body: RequestBody,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct ApiResponse {
     pub status: u16,
     pub status_text: String,
@@ -246,8 +271,9 @@ pub struct ApiResponse {
 // Workspaces / collections / folders
 // ---------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct Workspace {
     pub id: String,
     pub name: String,
@@ -255,8 +281,9 @@ pub struct Workspace {
     pub updated_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct Collection {
     pub id: String,
     pub workspace_id: String,
@@ -264,8 +291,9 @@ pub struct Collection {
     pub sort_order: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct Folder {
     pub id: String,
     pub collection_id: String,
@@ -276,8 +304,9 @@ pub struct Folder {
 
 /// Nested tree shape sent to the frontend for rendering the sidebar in
 /// one shot, rather than making it re-assemble flat rows.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct CollectionTree {
     pub collection: Collection,
     pub folders: Vec<FolderNode>,
@@ -285,8 +314,9 @@ pub struct CollectionTree {
     pub requests: Vec<ApiRequest>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct FolderNode {
     pub folder: Folder,
     pub children: Vec<FolderNode>,
@@ -297,8 +327,9 @@ pub struct FolderNode {
 // Environments
 // ---------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct EnvironmentVariable {
     pub id: String,
     pub environmentid: String,
@@ -308,8 +339,9 @@ pub struct EnvironmentVariable {
     pub is_secret: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct Environment {
     pub id: String,
     pub workspace_id: String,
@@ -317,8 +349,9 @@ pub struct Environment {
     pub sort_order: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct EnvironmentWithVariables {
     pub environment: Environment,
     pub variables: Vec<EnvironmentVariable>,
@@ -328,8 +361,9 @@ pub struct EnvironmentWithVariables {
 // History
 // ---------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct HistoryEntry {
     pub id: String,
     pub request_id: Option<String>,
@@ -346,8 +380,9 @@ pub struct HistoryEntry {
 // to a single persisted JSON blob (see migrations/0001_init.sql).
 // ---------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct AppSettings {
     pub follow_redirects: bool,
     pub max_redirects: u32,
@@ -383,8 +418,9 @@ impl Default for AppSettings {
 /// themes are just a different value set for the same keys — the
 /// frontend applies a theme by writing these as CSS custom properties
 /// on `:root` at runtime (see commands/themes.rs doc comment).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct ThemeTokens {
     pub color_bg: String,
     pub color_panel: String,
@@ -406,8 +442,9 @@ pub struct ThemeTokens {
     pub font_mono: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct Theme {
     pub id: String,
     pub name: String,
@@ -419,16 +456,18 @@ pub struct Theme {
 // Plugins
 // ---------------------------------------------------------------------
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub enum PluginHook {
     PreRequest,
     PostResponse,
 }
 
 /// `manifest.json` shape every plugin folder must provide.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct PluginManifest {
     pub id: String,
     pub name: String,
@@ -443,8 +482,9 @@ pub struct PluginManifest {
     pub hooks: Vec<PluginHook>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct PluginRecord {
     pub id: String,
     pub name: String,
@@ -466,6 +506,9 @@ pub struct ActiveState {
     pub active_workspace_id: Option<String>,
     pub active_environment_id: Option<String>,
     pub active_theme_id: Option<String>,
+    pub active_collection_id: Option<String>,
+    pub active_folder_id: Option<String>,
+    pub active_request_id: Option<String>,
 }
 
 impl Default for ActiveState {
@@ -474,6 +517,9 @@ impl Default for ActiveState {
             active_workspace_id: None,
             active_environment_id: None,
             active_theme_id: None,
+            active_collection_id: None,
+            active_folder_id: None,
+            active_request_id: None,
         }
     }
 }
@@ -484,8 +530,9 @@ impl Default for ActiveState {
 
 /// A saved message template the user creates for reuse — persisted to
 /// YAML alongside the request that owns it.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct WsSavedMessage {
     pub id: String,
     pub name: String,
@@ -494,8 +541,9 @@ pub struct WsSavedMessage {
 
 /// Payload emitted over the Tauri event channel for each WS frame
 /// (both sent and received).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct WsEvent {
     pub connection_id: String,
     pub direction: String,

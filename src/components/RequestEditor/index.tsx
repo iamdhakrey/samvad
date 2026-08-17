@@ -26,7 +26,6 @@ const WS_SUB_TABS: { id: SubTab; label: string }[] = [
   { id: "saved", label: "Saved" },
 ];
 
-
 function RequestPanel({
   tab,
   isMobile,
@@ -65,8 +64,9 @@ function RequestPanel({
 
       {/* Sub-tabs — scrollable on mobile */}
       <div
-        className={`flex gap-1 border-b border-border ${isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
-          }`}
+        className={`flex gap-1 border-b border-border ${
+          isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
+        }`}
       >
         {visibleTabs.map((t) => (
           <button
@@ -139,7 +139,7 @@ function RequestPanel({
               files: tab.request.body?.files?.map((file) => ({
                 ...file,
                 id: file.id || crypto.randomUUID(), // Fallback ID if missing
-                sizeBytes: file.sizeBytes || 0, // Fallback size if missing
+                sizeBytes: file.sizeBytes || BigInt(0), // Fallback size if missing
               })),
             }}
             onChange={(body) => updateActiveRequest({ body })}

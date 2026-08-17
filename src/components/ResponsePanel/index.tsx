@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Copy, Download, Code2, AlignLeft, AlertCircle } from "lucide-react";
-import { ApiResponse } from "../../types";
+import { ApiResponse } from "@samvad-internal/models";
+// import { ApiResponse } from "../../types";
 
 type RespTab = "body" | "headers" | "cookies" | "raw";
 
@@ -17,7 +18,9 @@ function statusColor(status: number) {
   return "text-warning";
 }
 
-function formatBytes(bytes: number) {
+function formatBytes(bytes: BigInt | number): string {
+  bytes = Number(bytes);
+
   if (bytes < 1024) return `${bytes} B`;
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
@@ -88,9 +91,7 @@ export default function ResponsePanel({
       {/* Metrics bar */}
       <div
         className={`flex items-center gap-4 border-b border-border bg-panel text-sm ${
-          isMobile
-            ? "flex-wrap gap-2 px-3 py-2"
-            : "px-4 py-2"
+          isMobile ? "flex-wrap gap-2 px-3 py-2" : "px-4 py-2"
         }`}
       >
         <span className={`font-semibold ${statusColor(response.status)}`}>
@@ -145,7 +146,9 @@ export default function ResponsePanel({
       </div>
 
       {/* Main Panel Content */}
-      <div className={`flex-1 overflow-auto font-mono text-sm ${isMobile ? "px-3 py-2" : "px-4 py-3"}`}>
+      <div
+        className={`flex-1 overflow-auto font-mono text-sm ${isMobile ? "px-3 py-2" : "px-4 py-3"}`}
+      >
         {tab === "body" && (
           <pre className="whitespace-pre-wrap text-text-primary">
             {renderFormattedBody()}
@@ -154,9 +157,18 @@ export default function ResponsePanel({
         {tab === "headers" && (
           <div className="flex flex-col gap-1">
             {Object.entries(response.headers || {}).map(([k, v]) => (
-              <div key={k} className={`flex ${isMobile ? "flex-col" : "gap-2"}`}>
-                <span className={`text-secondary ${isMobile ? "text-xs" : ""}`}>{k}:</span>
-                <span className={`text-text-primary ${isMobile ? "text-xs break-all" : ""}`}>{v}</span>
+              <div
+                key={k}
+                className={`flex ${isMobile ? "flex-col" : "gap-2"}`}
+              >
+                <span className={`text-secondary ${isMobile ? "text-xs" : ""}`}>
+                  {k}:
+                </span>
+                <span
+                  className={`text-text-primary ${isMobile ? "text-xs break-all" : ""}`}
+                >
+                  {v}
+                </span>
               </div>
             ))}
           </div>

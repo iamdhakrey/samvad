@@ -39,8 +39,9 @@ export default function Sidebar({ isMobile, onClose }: SidebarProps) {
 
   return (
     <aside
-      className={`flex h-full shrink-0 flex-col border-r border-border bg-bg ${isMobile ? "w-[85vw] max-w-[320px]" : "w-[280px]"
-        }`}
+      className={`flex h-full shrink-0 flex-col border-r border-border bg-bg ${
+        isMobile ? "w-[85vw] max-w-[320px]" : "w-70"
+      }`}
     >
       {/* Mobile close header */}
       {isMobile && (
@@ -62,7 +63,7 @@ export default function Sidebar({ isMobile, onClose }: SidebarProps) {
       <WorkspaceSelector />
 
       {/* Divider */}
-      <div className="h-[1px] bg-borderMuted w-full" />
+      <div className="h-px bg-borderMuted w-full" />
 
       {/* Search */}
       <div className="px-3 pt-3">

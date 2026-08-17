@@ -205,6 +205,9 @@ pub fn init_data_dir(data_dir: &Path) -> AppResult<DataDir> {
             active_workspace_id: Some(default_ws_id.to_string()),
             active_environment_id: None,
             active_theme_id: Some("varta-dark".to_string()),
+            active_collection_id: None,
+            active_folder_id: None,
+            active_request_id: None,
         };
         write_yaml(&dd.app_state_path(), &state)?;
     }
