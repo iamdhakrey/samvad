@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { EnvironmentVariable } from "../types";
 import { Plus, Trash2, Edit2, Check, X, Save, Eye, EyeOff } from "lucide-react";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { useVartaStore } from "../store/vartaStore";
+import { EnvironmentVariable } from "@samvad-internal/models";
 
 export const EnvironmentEditor: React.FC<{ activeWorkspaceId: string }> = ({
   activeWorkspaceId,
@@ -110,7 +110,7 @@ export const EnvironmentEditor: React.FC<{ activeWorkspaceId: string }> = ({
   return (
     <div className="flex h-full w-full bg-bg border border-border rounded-md overflow-hidden">
       {/* LEFT PANE: Environment List */}
-      <div className="w-1/3 min-w-[250px] border-r border-border bg-panel flex flex-col">
+      <div className="w-1/3 min-w-62.5 border-r border-border bg-panel flex flex-col">
         <div className="flex items-center justify-between p-3 border-b border-border">
           <span className="text-xs font-semibold tracking-wider text-text-muted">
             ENVIRONMENTS
@@ -141,10 +141,11 @@ export const EnvironmentEditor: React.FC<{ activeWorkspaceId: string }> = ({
             <div
               key={env.environment.id}
               onClick={() => setActiveEnvironment(env.environment.id)}
-              className={`group flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${activeEnvironmentId === env.environment.id
-                ? "bg-primary/20 text-text-primary"
-                : "text-text-secondary hover:bg-borderMuted"
-                }`}
+              className={`group flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${
+                activeEnvironmentId === env.environment.id
+                  ? "bg-primary/20 text-text-primary"
+                  : "text-text-secondary hover:bg-borderMuted"
+              }`}
             >
               {editingId === env.environment.id ? (
                 <form
@@ -218,10 +219,11 @@ export const EnvironmentEditor: React.FC<{ activeWorkspaceId: string }> = ({
                 <button
                   onClick={handleSaveVariables}
                   disabled={!isDirty}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-all ${isDirty
-                    ? "bg-primary text-white hover:bg-primary-hover shadow-panel"
-                    : "bg-panel text-text-muted opacity-50 cursor-default"
-                    }`}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                    isDirty
+                      ? "bg-primary text-white hover:bg-primary-hover shadow-panel"
+                      : "bg-panel text-text-muted opacity-50 cursor-default"
+                  }`}
                 >
                   <Save size={16} />
                   Save

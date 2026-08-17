@@ -1,8 +1,8 @@
 import { useRef } from "react";
 import Editor from "@monaco-editor/react";
 import { Wand2, Upload, File as FileIcon, X } from "lucide-react";
-import { BodyMode, RequestBody } from "../../types";
 import KeyValueTable from "./KeyValueTable";
+import { BodyMode, RequestBody } from "@samvad-internal/models";
 
 const MODES: { id: BodyMode; label: string }[] = [
   { id: "json", label: "JSON" },
@@ -12,10 +12,12 @@ const MODES: { id: BodyMode; label: string }[] = [
   { id: "multipart", label: "Multipart" },
 ];
 
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+function formatBytes(bytes: number | bigint): string {
+  const b = Number(bytes);
+
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 interface Props {
@@ -45,17 +47,21 @@ export default function BodyTab({ body, onChange, isMobile = false }: Props) {
     const next = Array.from(fileList).map((f) => ({
       id: crypto.randomUUID(),
       name: f.name,
-      sizeBytes: f.size,
-      path:  "", // Tauri provides the path; in a browser, this will be empty
+      sizeBytes: BigInt(f.size),
+      path: "", // Tauri provides the path; in a browser, this will be empty
     }));
     onChange({ ...body, files: [...(body.files ?? []), ...next] });
   }
 
   return (
-    <div className={`flex h-full flex-col ${isMobile ? "px-3 py-2.5" : "px-4 py-3"}`}>
+    <div
+      className={`flex h-full flex-col ${isMobile ? "px-3 py-2.5" : "px-4 py-3"}`}
+    >
       <div className="mb-3 flex items-center justify-between">
         {/* Mode selector — scrollable on mobile */}
-        <div className={`flex gap-1 ${isMobile ? "overflow-x-auto scrollbar-hide" : ""}`}>
+        <div
+          className={`flex gap-1 ${isMobile ? "overflow-x-auto scrollbar-hide" : ""}`}
+        >
           {MODES.map((m) => (
             <button
               key={m.id}
@@ -140,7 +146,9 @@ export default function BodyTab({ body, onChange, isMobile = false }: Props) {
           >
             <Upload size={20} className="text-text-secondary" />
             <p className="text-sm text-text-secondary">
-              {isMobile ? "Tap to browse files" : "Drag and drop files, or click to browse"}
+              {isMobile
+                ? "Tap to browse files"
+                : "Drag and drop files, or click to browse"}
             </p>
             <input
               ref={fileInputRef}
@@ -165,7 +173,10 @@ export default function BodyTab({ body, onChange, isMobile = false }: Props) {
                   </span>
                   <button
                     onClick={() =>
-                      onChange({ ...body, files: body.files?.filter((x) => x.id !== f.id) })
+                      onChange({
+                        ...body,
+                        files: body.files?.filter((x) => x.id !== f.id),
+                      })
                     }
                     aria-label={`Remove ${f.name}`}
                     className="text-text-muted hover:text-error"

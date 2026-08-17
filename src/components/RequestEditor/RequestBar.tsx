@@ -1,9 +1,10 @@
 import { ChevronDown } from "lucide-react";
-import { HttpMethod, RequestTab } from "../../types";
+import { RequestTab } from "../../types";
 import { useRef, useState } from "react";
 import { useVartaStore } from "../../store/vartaStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { MethodStyles } from "../../types";
+import { HttpMethod } from "@samvad-internal/models";
 
 interface UrlInputProps {
   url: string;
