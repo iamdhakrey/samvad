@@ -11,7 +11,8 @@ import {
   Globe,
 } from "lucide-react";
 import { useVartaStore } from "../../store/vartaStore";
-import { RequestTab, WsMessage, WsSavedMessage } from "../../types";
+import { RequestTab, WsMessage } from "../../types";
+import { WsSavedMessage } from "@samvad-internal/models";
 
 interface WebSocketPanelProps {
   tab: RequestTab;

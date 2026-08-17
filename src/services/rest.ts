@@ -1,5 +1,5 @@
+import { ApiRequest, ApiResponse } from "@samvad-internal/models";
 import { invoke } from "@tauri-apps/api/core";
-import { ApiRequest, ApiResponse } from "../types";
 
 export async function sendNativeRequest(
   request: ApiRequest,

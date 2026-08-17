@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FolderNode as FolderNodeType } from "../../types";
+import { FolderNode as FolderNodeType } from "@samvad-internal/models";
 import { RequestItem } from "./RequestItem";
 import {
   ChevronRight,
@@ -11,14 +11,14 @@ import {
   Edit2,
   MoreHorizontal,
   Check,
-  X
+  X,
 } from "lucide-react";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 
-export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> = ({
-  node,
-  level = 0
-}) => {
+export const FolderNodeItem: React.FC<{
+  node: FolderNodeType;
+  level?: number;
+}> = ({ node, level = 0 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   // Rename States
@@ -27,13 +27,16 @@ export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> 
 
   // Dropdown & Creation States
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [addingItem, setAddingItem] = useState<"folder" | "request" | "ws" | null>(null);
+  const [addingItem, setAddingItem] = useState<
+    "folder" | "request" | "ws" | null
+  >(null);
   const [newItemName, setNewItemName] = useState("");
 
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Make sure 'renameFolder' is exported from your store!
-  const { createFolder, createRequest, deleteFolder, renameFolder, createWs } = useWorkspaceStore();
+  const { createFolder, createRequest, deleteFolder, renameFolder, createWs } =
+    useWorkspaceStore();
 
   // Handle click outside for the dropdown menu
   useEffect(() => {
@@ -55,7 +58,11 @@ export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> 
     } else if (addingItem === "ws") {
       await createWs(node.folder.collectionId, node.folder.id, newItemName);
     } else {
-      await createRequest(node.folder.collectionId, node.folder.id, newItemName);
+      await createRequest(
+        node.folder.collectionId,
+        node.folder.id,
+        newItemName,
+      );
     }
 
     setNewItemName("");
@@ -66,7 +73,9 @@ export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> 
   const handleRenameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editValue.trim() && editValue !== node.folder.name) {
-      console.log(`Renaming folder${node.folder.collectionId} ${node.folder.id} to "${editValue}"`);
+      console.log(
+        `Renaming folder${node.folder.collectionId} ${node.folder.id} to "${editValue}"`,
+      );
       await renameFolder(node.folder.collectionId, node.folder.id, editValue);
     }
     setEditingId(null);
@@ -77,7 +86,7 @@ export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> 
       {/* Folder Row */}
       <div
         className="group flex items-center justify-between px-1.5 py-1.5 mx-1 rounded-md text-sm text-text-secondary hover:bg-panel hover:text-text-primary cursor-pointer transition-colors relative"
-        style={{ paddingLeft: `${(level * 12) + 6}px` }}
+        style={{ paddingLeft: `${level * 12 + 6}px` }}
         onClick={() => {
           // Only toggle open/close if we aren't currently renaming this folder
           if (editingId !== node.folder.id) setIsOpen(!isOpen);
@@ -120,7 +129,9 @@ export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> 
           // --- STANDARD FOLDER DISPLAY ---
           <>
             <div className="flex items-center gap-1.5 truncate">
-              <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+              <ChevronRight
+                className={`w-3.5 h-3.5 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`}
+              />
               {isOpen ? (
                 <FolderOpen className="w-3.5 h-3.5 text-secondary shrink-0" />
               ) : (
@@ -130,7 +141,10 @@ export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> 
             </div>
 
             {/* Hover Actions (Options Dropdown) */}
-            <div className="opacity-70 group-hover:opacity-100 flex items-center transition-opacity pr-1" ref={menuRef}>
+            <div
+              className="opacity-70 group-hover:opacity-100 flex items-center transition-opacity pr-1"
+              ref={menuRef}
+            >
               <div className="relative">
                 <button
                   onClick={(e) => {
@@ -183,7 +197,7 @@ export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> 
                       Add Folder
                     </button>
 
-                    <div className="h-[1px] bg-borderMuted my-1 mx-2" />
+                    <div className="h-px bg-borderMuted my-1 mx-2" />
 
                     <button
                       onClick={() => {
@@ -216,11 +230,13 @@ export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> 
 
       {/* Children & Requests rendering */}
       {isOpen && (
-        <div className="flex flex-col relative before:content-[''] before:absolute before:left-[14px] before:top-0 before:bottom-0 before:w-[1px] before:bg-borderMuted ml-[10px]">
-
+        <div className="flex flex-col relative before:content-[''] before:absolute before:left-3.5 before:top-0 before:bottom-0 before:w-px before:bg-borderMuted ml-2.5">
           {/* Inline Add Item Input */}
           {addingItem && (
-            <form onSubmit={handleCreateItem} className="pl-6 pr-2 py-1 flex gap-1 mt-0.5">
+            <form
+              onSubmit={handleCreateItem}
+              className="pl-6 pr-2 py-1 flex gap-1 mt-0.5"
+            >
               <input
                 autoFocus
                 type="text"
@@ -237,7 +253,11 @@ export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> 
 
           {/* Render Subfolders */}
           {node.children.map((child) => (
-            <FolderNodeItem key={child.folder.id} node={child} level={level + 1} />
+            <FolderNodeItem
+              key={child.folder.id}
+              node={child}
+              level={level + 1}
+            />
           ))}
 
           {/* Render Requests inside this folder */}
@@ -247,9 +267,13 @@ export const FolderNodeItem: React.FC<{ node: FolderNodeType; level?: number }> 
             </div>
           ))}
 
-          {node.children.length === 0 && node.requests.length === 0 && !addingItem && (
-            <div className="pl-8 py-1.5 text-xs text-text-muted italic">Empty</div>
-          )}
+          {node.children.length === 0 &&
+            node.requests.length === 0 &&
+            !addingItem && (
+              <div className="pl-8 py-1.5 text-xs text-text-muted italic">
+                Empty
+              </div>
+            )}
         </div>
       )}
     </div>

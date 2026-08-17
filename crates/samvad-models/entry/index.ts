@@ -1,1 +1,1 @@
-export * from '../bindings/User';
+export * from "../bindings/models";

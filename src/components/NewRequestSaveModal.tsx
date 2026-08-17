@@ -56,7 +56,7 @@ export const NewReqSaveModal: React.FC<NewRequestSaveModalProps> = ({
   const handleSave = () => {
     if (!selectedCollectionId) return;
     if (activeTab?.request.id.startsWith("new-")) {
-      activeTab.request.collection_id = selectedCollectionId;
+      activeTab.request.collectionId = selectedCollectionId;
       saveActiveRequest();
     }
 

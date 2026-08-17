@@ -4,8 +4,6 @@ import { MethodStyles } from "../types";
 import { useEffect } from "react";
 // import { HttpMethod } from "../types";
 
-
-
 function statusColor(status: number) {
   if (status >= 200 && status < 300) return "text-success";
   if (status >= 400) return "text-error";
@@ -59,7 +57,7 @@ export default function HistoryDrawer({
           <div className="flex-1 overflow-y-auto">
             {historyEntries.map((h) => (
               <button
-                key={h.requestid}
+                key={h.requestId}
                 className="flex w-full flex-col gap-1 border-b border-borderMuted px-4 py-2.5 text-left hover:bg-panel-raised"
               >
                 <div className="flex items-center gap-2">
@@ -74,7 +72,7 @@ export default function HistoryDrawer({
                 </div>
                 <div className="flex items-center gap-3 text-xs text-text-muted">
                   <span className={statusColor(h.status)}>{h.status}</span>
-                  <span>{h.timestamp}</span>
+                  <span>{h.createdAt}</span>
                   <span>{h.durationMs} ms</span>
                 </div>
               </button>
@@ -102,7 +100,7 @@ export default function HistoryDrawer({
       <div className="flex-1 overflow-y-auto">
         {historyEntries.map((h) => (
           <div
-            key={h.requestid}
+            key={h.requestId}
             className="flex w-full flex-col gap-1 border-b border-borderMuted px-4 py-2.5 text-left hover:bg-panel-raised"
           >
             <div className="flex items-center gap-2">

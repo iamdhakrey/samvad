@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSettingsStore } from "../store/settingStore";
-import { AppSettings } from "../types";
+// import { AppSettings } from "../types";
 import {
   X,
   Shield,
@@ -12,13 +12,22 @@ import {
   Keyboard,
   CornerDownLeft,
 } from "lucide-react";
+import { AppSettings } from "@samvad-internal/models";
 
 type SettingsTab = "general" | "appearance" | "shortcuts";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { id: "general", label: "General", icon: <Settings2 className="w-4 h-4" /> },
-  { id: "appearance", label: "Appearance", icon: <Palette className="w-4 h-4" /> },
-  { id: "shortcuts", label: "Shortcuts", icon: <Keyboard className="w-4 h-4" /> },
+  {
+    id: "appearance",
+    label: "Appearance",
+    icon: <Palette className="w-4 h-4" />,
+  },
+  {
+    id: "shortcuts",
+    label: "Shortcuts",
+    icon: <Keyboard className="w-4 h-4" />,
+  },
 ];
 
 const SHORTCUT_LIST = [
@@ -35,9 +44,17 @@ interface SettingsPanelProps {
   isMobile?: boolean;
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isMobile = false }) => {
-  const { isSettingsOpen, setSettingsOpen, settings, updateSettings, isLoadingSettings, fetchSettings } =
-    useSettingsStore();
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({
+  isMobile = false,
+}) => {
+  const {
+    isSettingsOpen,
+    setSettingsOpen,
+    settings,
+    updateSettings,
+    isLoadingSettings,
+    fetchSettings,
+  } = useSettingsStore();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [formData, setFormData] = useState<AppSettings | null>(null);
@@ -79,20 +96,24 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isMobile = false }
     await updateSettings(payload);
   };
 
-  const updateField = <K extends keyof AppSettings>(field: K, value: AppSettings[K]) => {
+  const updateField = <K extends keyof AppSettings>(
+    field: K,
+    value: AppSettings[K],
+  ) => {
     setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
       onMouseDown={() => setSettingsOpen(false)}
     >
       <div
-        className={`relative flex overflow-hidden rounded-xl border border-border bg-bg shadow-elevated animate-in zoom-in-95 duration-200 ${isMobile
-          ? "w-[95vw] h-[90vh] flex-col"
-          : "w-full max-w-3xl h-[78vh] flex-row"
-          }`}
+        className={`relative flex overflow-hidden rounded-xl border border-border bg-bg shadow-elevated animate-in zoom-in-95 duration-200 ${
+          isMobile
+            ? "w-[95vw] h-[90vh] flex-col"
+            : "w-full max-w-3xl h-[78vh] flex-row"
+        }`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* ── Nav — sidebar on desktop, horizontal tabs on mobile ── */}
@@ -103,10 +124,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isMobile = false }
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${activeTab === tab.id
-                    ? "bg-primary/15 text-primary"
-                    : "text-text-secondary hover:bg-borderMuted hover:text-text-primary"
-                    }`}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
+                    activeTab === tab.id
+                      ? "bg-primary/15 text-primary"
+                      : "text-text-secondary hover:bg-borderMuted hover:text-text-primary"
+                  }`}
                 >
                   {tab.icon}
                   {tab.label}
@@ -131,10 +153,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isMobile = false }
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer text-left ${activeTab === tab.id
-                  ? "bg-primary/15 text-primary"
-                  : "text-text-secondary hover:bg-borderMuted hover:text-text-primary"
-                  }`}
+                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer text-left ${
+                  activeTab === tab.id
+                    ? "bg-primary/15 text-primary"
+                    : "text-text-secondary hover:bg-borderMuted hover:text-text-primary"
+                }`}
               >
                 {tab.icon}
                 {tab.label}
@@ -180,7 +203,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isMobile = false }
 
           {/* Footer — only shown on General tab */}
           {activeTab === "general" && (
-            <div className={`flex items-center justify-end gap-2 border-t border-border bg-panel-raised ${isMobile ? "px-3 py-2.5" : "px-5 py-3"}`}>
+            <div
+              className={`flex items-center justify-end gap-2 border-t border-border bg-panel-raised ${isMobile ? "px-3 py-2.5" : "px-5 py-3"}`}
+            >
               <button
                 type="button"
                 onClick={() => setSettingsOpen(false)}
@@ -209,11 +234,20 @@ interface GeneralTabProps {
   formData: AppSettings | null;
   isLoading: boolean;
   onSubmit: (e: React.FormEvent) => void;
-  updateField: <K extends keyof AppSettings>(field: K, value: AppSettings[K]) => void;
+  updateField: <K extends keyof AppSettings>(
+    field: K,
+    value: AppSettings[K],
+  ) => void;
   isMobile?: boolean;
 }
 
-const GeneralTab: React.FC<GeneralTabProps> = ({ formData, isLoading, onSubmit, updateField, isMobile = false }) => {
+const GeneralTab: React.FC<GeneralTabProps> = ({
+  formData,
+  isLoading,
+  onSubmit,
+  updateField,
+  isMobile = false,
+}) => {
   if (isLoading || !formData) {
     return (
       <div className="flex items-center justify-center h-full text-text-muted text-sm">
@@ -223,7 +257,11 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ formData, isLoading, onSubmit, 
   }
 
   return (
-    <form id="settings-general-form" onSubmit={onSubmit} className={`flex flex-col gap-6 ${isMobile ? "p-4" : "p-6"}`}>
+    <form
+      id="settings-general-form"
+      onSubmit={onSubmit}
+      className={`flex flex-col gap-6 ${isMobile ? "p-4" : "p-6"}`}
+    >
       {/* HTTP Behavior */}
       <section className="flex flex-col gap-4">
         <h3 className="text-[11px] font-bold tracking-wider text-text-muted uppercase">
@@ -238,15 +276,21 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ formData, isLoading, onSubmit, 
           onChange={(v) => updateField("followRedirects", v)}
         />
 
-        <div className={`flex items-center justify-between ${isMobile ? "flex-wrap gap-2" : ""}`}>
-          <label className="text-sm font-medium text-text-primary">Max Redirects</label>
+        <div
+          className={`flex items-center justify-between ${isMobile ? "flex-wrap gap-2" : ""}`}
+        >
+          <label className="text-sm font-medium text-text-primary">
+            Max Redirects
+          </label>
           <input
             type="number"
             min="0"
             max="50"
             disabled={!formData.followRedirects}
             value={formData.maxRedirects}
-            onChange={(e) => updateField("maxRedirects", parseInt(e.target.value) || 0)}
+            onChange={(e) =>
+              updateField("maxRedirects", parseInt(e.target.value) || 0)
+            }
             className="input-shell w-24 text-right disabled:opacity-40"
           />
         </div>
@@ -277,14 +321,18 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ formData, isLoading, onSubmit, 
             type="number"
             min="0"
             step="1000"
-            value={formData.timeoutMs}
-            onChange={(e) => updateField("timeoutMs", parseInt(e.target.value) || 0)}
+            value={Number(formData.timeoutMs)}
+            onChange={(e) =>
+              updateField("timeoutMs", BigInt(parseInt(e.target.value) || 0))
+            }
             className="input-shell w-full"
           />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-text-primary">User Agent</label>
+          <label className="text-sm font-medium text-text-primary">
+            User Agent
+          </label>
           <input
             type="text"
             value={formData.userAgent}
@@ -316,17 +364,21 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ formData, isLoading, onSubmit, 
 const AppearanceTab: React.FC = () => (
   <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
     <Palette className="w-10 h-10 text-text-muted opacity-40" />
-    <p className="text-sm font-medium text-text-secondary">Theme Customisation</p>
+    <p className="text-sm font-medium text-text-secondary">
+      Theme Customisation
+    </p>
     <p className="text-xs text-text-muted max-w-xs leading-relaxed">
-      Custom theme support is coming soon. You'll be able to choose from built-in themes or
-      create your own colour palette.
+      Custom theme support is coming soon. You'll be able to choose from
+      built-in themes or create your own colour palette.
     </p>
   </div>
 );
 
 // ─── Shortcuts Tab ───────────────────────────────────────────────────────────
 
-const ShortcutsTab: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) => (
+const ShortcutsTab: React.FC<{ isMobile?: boolean }> = ({
+  isMobile = false,
+}) => (
   <div className={`flex flex-col gap-4 ${isMobile ? "p-4" : "p-6"}`}>
     <h3 className="text-[11px] font-bold tracking-wider text-text-muted uppercase">
       Keyboard Shortcuts
@@ -335,10 +387,15 @@ const ShortcutsTab: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) =>
       {SHORTCUT_LIST.map(({ action, keys }) => (
         <div
           key={action}
-          className={`flex items-center justify-between bg-panel hover:bg-panel-raised transition-colors ${isMobile ? "px-3 py-2" : "px-4 py-2.5"
-            }`}
+          className={`flex items-center justify-between bg-panel hover:bg-panel-raised transition-colors ${
+            isMobile ? "px-3 py-2" : "px-4 py-2.5"
+          }`}
         >
-          <span className={`text-text-primary ${isMobile ? "text-xs" : "text-sm"}`}>{action}</span>
+          <span
+            className={`text-text-primary ${isMobile ? "text-xs" : "text-sm"}`}
+          >
+            {action}
+          </span>
           <div className="flex items-center gap-1">
             {keys.map((k, i) => (
               <React.Fragment key={k}>
@@ -369,7 +426,13 @@ interface ToggleRowProps {
   onChange: (value: boolean) => void;
 }
 
-const ToggleRow: React.FC<ToggleRowProps> = ({ icon, label, description, checked, onChange }) => (
+const ToggleRow: React.FC<ToggleRowProps> = ({
+  icon,
+  label,
+  description,
+  checked,
+  onChange,
+}) => (
   <label className="flex cursor-pointer items-center justify-between group">
     <div className="flex flex-col gap-0.5">
       <span className="flex items-center gap-2 text-sm font-medium text-text-primary">
@@ -386,15 +449,17 @@ const ToggleRow: React.FC<ToggleRowProps> = ({ icon, label, description, checked
         className="sr-only peer"
       />
       <div
-        className={`w-9 h-5 rounded-full border transition-colors cursor-pointer ${checked
-          ? "bg-primary border-primary"
-          : "bg-panel-raised border-border"
-          }`}
+        className={`w-9 h-5 rounded-full border transition-colors cursor-pointer ${
+          checked
+            ? "bg-primary border-primary"
+            : "bg-panel-raised border-border"
+        }`}
         onClick={() => onChange(!checked)}
       >
         <div
-          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${checked ? "translate-x-4" : "translate-x-0"
-            }`}
+          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${
+            checked ? "translate-x-4" : "translate-x-0"
+          }`}
         />
       </div>
     </div>
