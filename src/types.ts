@@ -1,93 +1,25 @@
-export type HttpMethod =
-  | "GET"
-  | "POST"
-  | "PUT"
-  | "PATCH"
-  | "DELETE"
-  | "OPTIONS"
-  | "HEAD"
-  | "WS"
-  | "QUERY";
+import {
+  ApiRequest,
+  ApiResponse,
+  CollectionTree,
+  EnvironmentVariable,
+  EnvironmentWithVariables,
+  HttpMethod,
+  UploadedFile,
+  WsSavedMessage,
+} from "@samvad-internal/models";
 
 export type AuthType = "none" | "basic" | "bearer" | "apiKey";
 
 export type BodyMode =
   "json" | "form-data" | "urlencoded" | "raw" | "multipart";
 
-export interface AppSettings {
-  followRedirects: boolean;
-  maxRedirects: number;
-  verifySslCertificates: boolean;
-  timeoutMs: number;
-  userAgent: string;
-  proxyUrl: string | null;
-}
-
-export interface KeyValueRow {
-  id: string;
-  key: string;
-  value: string;
-  enabled: boolean;
-}
-
-export interface AuthConfig {
-  type: AuthType;
-  basic?: { username: string; password: string };
-  bearer?: { token: string };
-  apiKey?: { key: string; value: string; addTo: "header" | "query" };
-}
-
-export interface UploadedFile {
-  id: string;
-  name: string;
-  sizeBytes: number;
-}
-
-export interface RequestBody {
-  mode: BodyMode;
-  raw?: string;
-  formData?: KeyValueRow[];
-  urlEncoded?: KeyValueRow[];
-  files?: ApiFile[];
-}
-
-export interface ApiFile {
-  name: string;
-  path: string;
-  sizeBytes: number;
-  id: string; // Unique identifier for the file
-}
-
 export interface ApiRequestBody {
-  files?: ApiFile[];
+  files?: UploadedFile[];
   raw?: string;
   json?: any;
   mode?: BodyMode;
   // Extend this if you have text fields or JSON payloads
-}
-
-// (KeyValueRow is defined above — this duplicate is removed)
-
-export interface CookieRow {
-  id: string;
-  name: string;
-  value: string;
-  domain?: string;
-  path?: string;
-}
-
-export interface ApiRequest {
-  id: string;
-  name: string;
-  method: string;
-  collection_id: string;
-  folder_id: string | null;
-  url: string;
-  params: KeyValueRow[]; // Must be a sequence (array)
-  headers: KeyValueRow[]; // Must be a sequence (array)
-  cookies: CookieRow[]; // Must be a sequence (array)
-  auth: any; // Match your AuthConfig structure
-  body: ApiRequestBody;
 }
 
 export interface CollectionFolder {
@@ -102,32 +34,6 @@ export interface Collection {
   folders: CollectionFolder[];
 }
 
-export interface Environment {
-  id: string;
-  name: string;
-}
-
-export interface HistoryEntry {
-  id: string;
-  requestid: string;
-  method: HttpMethod;
-  name: string;
-  url: string;
-  status: number;
-  timestamp: string;
-  durationMs: number;
-}
-
-export interface ApiResponse {
-  status: number;
-  statusText: string;
-  timeMs: number;
-  sizeBytes: number;
-  headers: Record<string, string>;
-  cookies: CookieRow[];
-  body: string;
-}
-
 // ── WebSocket types ──────────────────────────────────────────────────
 
 /** Runtime log entry — ephemeral, lives only in memory. */
@@ -136,13 +42,6 @@ export interface WsMessage {
   direction: "sent" | "received" | "closed";
   data: string;
   timestamp: string;
-}
-
-/** A saved message template — persisted to YAML via the backend. */
-export interface WsSavedMessage {
-  id: string;
-  name: string;
-  data: string;
 }
 
 export type WsStatus = "disconnected" | "connecting" | "connected";
@@ -190,37 +89,6 @@ export interface Collection {
   workspace_id: string;
   name: string;
   sort_order: number;
-}
-export interface CollectionTree {
-  collection: Collection;
-  folders: FolderNode[];
-  requests: ApiRequest[];
-}
-
-export interface EnvironmentVariable {
-  id: string;
-  environmentid: string;
-  key: string;
-  value: string;
-  enabled: boolean;
-  isSecret: boolean;
-  sortOrder?: number;
-}
-
-export interface Environment {
-  id: string;
-  name: string;
-  workspaceId: string;
-  sortOrder: number;
-}
-
-/**
- * Matches the Rust serialization of `EnvironmentWithVariables`:
- * { environment: { id, workspaceId, name, sortOrder }, variables: [...] }
- */
-export interface EnvironmentWithVariables {
-  environment: Environment;
-  variables: EnvironmentVariable[];
 }
 
 export interface WorkspaceStore {

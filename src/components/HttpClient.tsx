@@ -1,12 +1,17 @@
 import React, { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { sendNativeRequest } from "../services/rest";
-import { ApiFile, ApiRequest, ApiResponse } from "../types";
+import {
+  ApiRequest,
+  ApiResponse,
+  HttpMethod,
+  UploadedFile,
+} from "@samvad-internal/models";
 
 export const HttpClient: React.FC = () => {
   const [url, setUrl] = useState<string>("https://httpbin.org/post");
   const [method, setMethod] = useState<string>("POST");
-  const [selectedFiles, setSelectedFiles] = useState<ApiFile[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<UploadedFile[]>([]);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [response, setResponse] = useState<ApiResponse | null>(null);
@@ -21,13 +26,13 @@ export const HttpClient: React.FC = () => {
       });
 
       if (selected && Array.isArray(selected)) {
-        const mappedFiles: ApiFile[] = selected.map((filePath) => {
+        const mappedFiles: UploadedFile[] = selected.map((filePath) => {
           // Extract file name from absolute path
           const name = filePath.split(/[/\\]/).pop() || "file";
           return {
             name,
             path: filePath,
-            sizeBytes: 0,
+            sizeBytes: BigInt(0),
             id: "file_" + Date.now(),
           };
         });
@@ -39,7 +44,7 @@ export const HttpClient: React.FC = () => {
           {
             name,
             path: selected as string,
-            sizeBytes: 0,
+            sizeBytes: BigInt(0),
             id: "file_" + Date.now(),
           },
         ]);
@@ -58,21 +63,22 @@ export const HttpClient: React.FC = () => {
     const payload: ApiRequest = {
       id: "req_" + Date.now(),
       name: "My API Request",
-      method: method,
+      method: method as HttpMethod,
       url: url,
       params: [],
       headers: [
         { id: "h1", key: "Accept", value: "application/json", enabled: true },
       ],
       cookies: [],
-      auth: { type: "none" },
+      auth: { type: "none", basic: null, bearer: null, apiKey: null },
       body: {
+        mode: null,
         files: selectedFiles.length > 0 ? selectedFiles : undefined,
         raw: undefined,
-        json: undefined,
+        // json: undefined,
       },
-      collection_id: "",
-      folder_id: null,
+      collectionId: "",
+      folderId: null,
     };
 
     try {

@@ -8,10 +8,10 @@ import {
   FileText,
   ChevronRight,
 } from "lucide-react";
-import { ApiRequest } from "../types";
 import { useVartaStore } from "../store/vartaStore";
 import { useSettingsStore } from "../store/settingStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
+import { ApiRequest } from "@samvad-internal/models";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -45,7 +45,9 @@ interface CommandPaletteProps {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function CommandPalette({ isMobile = false }: CommandPaletteProps) {
+export default function CommandPalette({
+  isMobile = false,
+}: CommandPaletteProps) {
   const isOpen = useVartaStore((s) => s.isCommandPaletteOpen);
   const toggle = useVartaStore((s) => s.toggleCommandPalette);
   const newTab = useVartaStore((s) => s.newTab);
@@ -114,8 +116,13 @@ export default function CommandPalette({ isMobile = false }: CommandPaletteProps
       }
 
       // Recursively traverse folders
-      const traverseFolder = (node: (typeof tree.folders)[number], parentName?: string) => {
-        const name = parentName ? `${parentName} / ${node.folder.name}` : node.folder.name;
+      const traverseFolder = (
+        node: (typeof tree.folders)[number],
+        parentName?: string,
+      ) => {
+        const name = parentName
+          ? `${parentName} / ${node.folder.name}`
+          : node.folder.name;
         for (const req of node.requests) addReq(req, name);
         for (const child of node.children) traverseFolder(child, name);
       };
@@ -123,7 +130,14 @@ export default function CommandPalette({ isMobile = false }: CommandPaletteProps
     }
 
     return [...actions, ...requestItems];
-  }, [newTab, openRequest, toggleHistory, setSettingsOpen, collectionTrees, isMobile]);
+  }, [
+    newTab,
+    openRequest,
+    toggleHistory,
+    setSettingsOpen,
+    collectionTrees,
+    isMobile,
+  ]);
 
   // ── Filter by query ───────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -133,7 +147,7 @@ export default function CommandPalette({ isMobile = false }: CommandPaletteProps
       (item) =>
         item.label.toLowerCase().includes(q) ||
         item.breadcrumb?.toLowerCase().includes(q) ||
-        item.method?.toLowerCase().includes(q)
+        item.method?.toLowerCase().includes(q),
     );
   }, [allItems, query]);
 
@@ -162,7 +176,9 @@ export default function CommandPalette({ isMobile = false }: CommandPaletteProps
 
   // Scroll selected item into view
   useEffect(() => {
-    const el = listRef.current?.querySelector<HTMLElement>(`[data-idx="${selectedIdx}"]`);
+    const el = listRef.current?.querySelector<HTMLElement>(
+      `[data-idx="${selectedIdx}"]`,
+    );
     el?.scrollIntoView({ block: "nearest" });
   }, [selectedIdx]);
 
@@ -195,14 +211,16 @@ export default function CommandPalette({ isMobile = false }: CommandPaletteProps
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-start justify-center bg-black/55 backdrop-blur-sm animate-in fade-in duration-150 ${isMobile ? "pt-[5vh]" : "pt-[13vh]"
-        }`}
+      className={`fixed inset-0 z-50 flex items-start justify-center bg-black/55 backdrop-blur-sm animate-in fade-in duration-150 ${
+        isMobile ? "pt-[5vh]" : "pt-[13vh]"
+      }`}
       onClick={() => toggle(false)}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`overflow-hidden rounded-xl border border-border bg-panel shadow-elevated animate-in zoom-in-95 duration-150 ${isMobile ? "w-[95vw]" : "w-[560px]"
-          }`}
+        className={`overflow-hidden rounded-xl border border-border bg-panel shadow-elevated animate-in zoom-in-95 duration-150 ${
+          isMobile ? "w-[95vw]" : "w-140"
+        }`}
       >
         {/* Search input */}
         <div className="flex items-center gap-2.5 border-b border-border px-3.5 py-3">
@@ -223,7 +241,9 @@ export default function CommandPalette({ isMobile = false }: CommandPaletteProps
           {orderedFiltered.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-8 text-center">
               <Zap className="w-6 h-6 text-text-muted opacity-40" />
-              <p className="text-sm text-text-muted">No matches for "{query}"</p>
+              <p className="text-sm text-text-muted">
+                No matches for "{query}"
+              </p>
             </div>
           ) : (
             <>
@@ -281,7 +301,13 @@ interface GroupProps {
   onSelect: (item: PaletteItem) => void;
 }
 
-function Group({ label, items, globalOffset, selectedIdx, onSelect }: GroupProps) {
+function Group({
+  label,
+  items,
+  globalOffset,
+  selectedIdx,
+  onSelect,
+}: GroupProps) {
   return (
     <div>
       <div className="px-3.5 pb-0.5 pt-2 text-[10px] font-bold tracking-widest text-text-muted uppercase select-none">
@@ -295,13 +321,16 @@ function Group({ label, items, globalOffset, selectedIdx, onSelect }: GroupProps
             key={item.id}
             data-idx={idx}
             onClick={() => onSelect(item)}
-            className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-left transition-colors ${isSelected
-              ? "bg-primary/15 text-text-primary"
-              : "text-text-secondary hover:bg-panel-raised hover:text-text-primary"
-              }`}
+            className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-left transition-colors ${
+              isSelected
+                ? "bg-primary/15 text-text-primary"
+                : "text-text-secondary hover:bg-panel-raised hover:text-text-primary"
+            }`}
           >
             {/* Icon */}
-            <span className={`shrink-0 ${isSelected ? "text-primary" : "text-text-muted"}`}>
+            <span
+              className={`shrink-0 ${isSelected ? "text-primary" : "text-text-muted"}`}
+            >
               {item.icon}
             </span>
 
@@ -322,8 +351,9 @@ function Group({ label, items, globalOffset, selectedIdx, onSelect }: GroupProps
             <span className="shrink-0 flex items-center gap-2">
               {item.method && (
                 <span
-                  className={`font-mono text-[10px] font-bold ${METHOD_COLORS[item.method] ?? "text-text-muted"
-                    }`}
+                  className={`font-mono text-[10px] font-bold ${
+                    METHOD_COLORS[item.method] ?? "text-text-muted"
+                  }`}
                 >
                   {item.method}
                 </span>

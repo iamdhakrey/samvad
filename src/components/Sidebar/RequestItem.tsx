@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { ApiRequest, HttpMethod, MethodStyles } from "../../types";
+import { MethodStyles } from "../../types";
 import { Check, Edit2, Trash2, X } from "lucide-react";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { useVartaStore } from "../../store/vartaStore";
+import { ApiRequest, HttpMethod } from "@samvad-internal/models";
 
 export const RequestItem: React.FC<{ request: ApiRequest }> = ({ request }) => {
   const { deleteRequest, renameRequest } = useWorkspaceStore();

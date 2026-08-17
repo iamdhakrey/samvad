@@ -99,9 +99,10 @@ export function UserProfileMenu() {
       {open && (
         <div
           id="user-profile-dropdown"
-          className="absolute right-0 top-full z-[200] mt-1 w-56 overflow-hidden rounded-lg border border-border bg-panel shadow-elevated"
+          className="absolute right-0 top-full z-200 mt-1 w-56 overflow-hidden rounded-lg border border-border bg-panel shadow-elevated"
           style={{
-            animation: "profileMenuIn 0.14s cubic-bezier(0.16,1,0.3,1) forwards",
+            animation:
+              "profileMenuIn 0.14s cubic-bezier(0.16,1,0.3,1) forwards",
           }}
           role="menu"
         >
@@ -118,7 +119,7 @@ export function UserProfileMenu() {
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/30 to-secondary/30 text-xs font-bold text-primary">
+                    <span className="flex h-full w-full items-center justify-center bg-linear-to-br from-primary/30 to-secondary/30 text-xs font-bold text-primary">
                       {initials}
                     </span>
                   )}

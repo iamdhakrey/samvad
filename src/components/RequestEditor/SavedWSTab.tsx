@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { RequestTab, WsSavedMessage } from "../../types";
+import { RequestTab } from "../../types";
 import { useVartaStore } from "../../store/vartaStore";
 import { Save, Send, Trash2, X } from "lucide-react";
+import { WsSavedMessage } from "@samvad-internal/models";
 
 function SavedWSTab({ tab, isMobile }: { tab: RequestTab; isMobile: boolean }) {
   const [showSaveForm, setShowSaveForm] = useState(false);

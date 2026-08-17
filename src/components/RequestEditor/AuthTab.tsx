@@ -1,4 +1,4 @@
-import { AuthConfig, AuthType } from "../../types";
+import { AuthConfig, AuthType } from "@samvad-internal/models";
 
 const AUTH_TYPES: { id: AuthType; label: string }[] = [
   { id: "none", label: "No auth" },
@@ -21,13 +21,21 @@ export default function AuthTab({ auth, onChange, isMobile = false }: Props) {
       }`}
     >
       {/* Auth type selector */}
-      <div className={isMobile ? "flex gap-1 overflow-x-auto scrollbar-hide" : "w-44 shrink-0"}>
+      <div
+        className={
+          isMobile
+            ? "flex gap-1 overflow-x-auto scrollbar-hide"
+            : "w-44 shrink-0"
+        }
+      >
         {AUTH_TYPES.map((t) => (
           <button
             key={t.id}
             onClick={() => onChange({ ...auth, type: t.id })}
             className={`${
-              isMobile ? "shrink-0 rounded-md px-3 py-1.5" : "block w-full rounded-md px-2.5 py-1.5"
+              isMobile
+                ? "shrink-0 rounded-md px-3 py-1.5"
+                : "block w-full rounded-md px-2.5 py-1.5"
             } text-left text-sm ${
               auth.type === t.id
                 ? "bg-panel-raised text-text-primary"
@@ -42,7 +50,9 @@ export default function AuthTab({ auth, onChange, isMobile = false }: Props) {
       {/* Auth form */}
       <div className="flex-1">
         {auth.type === "none" && (
-          <p className="text-sm text-text-muted">This request does not use authorization.</p>
+          <p className="text-sm text-text-muted">
+            This request does not use authorization.
+          </p>
         )}
 
         {auth.type === "basic" && (
@@ -50,13 +60,31 @@ export default function AuthTab({ auth, onChange, isMobile = false }: Props) {
             <Field
               label="Username"
               value={auth.basic?.username ?? ""}
-              onChange={(v) => onChange({ ...auth, basic: { ...auth.basic, username: v, password: auth.basic?.password ?? "" } })}
+              onChange={(v) =>
+                onChange({
+                  ...auth,
+                  basic: {
+                    ...auth.basic,
+                    username: v,
+                    password: auth.basic?.password ?? "",
+                  },
+                })
+              }
             />
             <Field
               label="Password"
               type="password"
               value={auth.basic?.password ?? ""}
-              onChange={(v) => onChange({ ...auth, basic: { ...auth.basic, password: v, username: auth.basic?.username ?? "" } })}
+              onChange={(v) =>
+                onChange({
+                  ...auth,
+                  basic: {
+                    ...auth.basic,
+                    password: v,
+                    username: auth.basic?.username ?? "",
+                  },
+                })
+              }
             />
           </div>
         )}
@@ -78,14 +106,28 @@ export default function AuthTab({ auth, onChange, isMobile = false }: Props) {
               label="Key"
               value={auth.apiKey?.key ?? ""}
               onChange={(v) =>
-                onChange({ ...auth, apiKey: { key: v, value: auth.apiKey?.value ?? "", addTo: auth.apiKey?.addTo ?? "header" } })
+                onChange({
+                  ...auth,
+                  apiKey: {
+                    key: v,
+                    value: auth.apiKey?.value ?? "",
+                    addTo: auth.apiKey?.addTo ?? "header",
+                  },
+                })
               }
             />
             <Field
               label="Value"
               value={auth.apiKey?.value ?? ""}
               onChange={(v) =>
-                onChange({ ...auth, apiKey: { key: auth.apiKey?.key ?? "", value: v, addTo: auth.apiKey?.addTo ?? "header" } })
+                onChange({
+                  ...auth,
+                  apiKey: {
+                    key: auth.apiKey?.key ?? "",
+                    value: v,
+                    addTo: auth.apiKey?.addTo ?? "header",
+                  },
+                })
               }
             />
             <label className="text-sm text-text-secondary">

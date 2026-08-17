@@ -138,5 +138,15 @@ pub async fn duplicate_request(
 
 #[tauri::command]
 pub async fn save_request(state: State<'_, AppState>, request: ApiRequest) -> AppResult<()> {
-    crate::db::collections::save_request(&state.data_dir, &request)
+    let _ = crate::db::collections::save_request(&state.data_dir, &request);
+    let _ = crate::db::app_state::set_active_request(&state.data_dir, Some(&request.id));
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_active_collection(
+    state: State<'_, AppState>,
+    collectionid: Option<String>,
+) -> AppResult<()> {
+    crate::db::app_state::set_active_collection(&state.data_dir, collectionid.as_deref())
 }

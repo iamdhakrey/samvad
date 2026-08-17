@@ -1,15 +1,10 @@
 import { create } from "zustand";
-import {
-  ApiRequest,
-  HistoryEntry,
-  RequestTab,
-  WsMessage,
-  WsSavedMessage,
-} from "../types";
+import { RequestTab, WsMessage } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import { sendNativeRequest } from "../services/rest";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { useWorkspaceStore } from "./workspaceStore";
+import { ApiRequest, HistoryEntry, WsSavedMessage } from "@samvad-internal/models";
 
 interface VartaState {
   tabs: RequestTab[];
@@ -74,10 +69,10 @@ function blankRequest(): ApiRequest {
     params: [{ id: "p1", key: "", value: "", enabled: true }],
     headers: [{ id: "h1", key: "", value: "", enabled: true }],
     cookies: [],
-    auth: { type: "none" },
-    body: { raw: "" },
-    collection_id: "",
-    folder_id: null,
+    auth: { type: "none", basic: null, bearer: null, apiKey: null },
+    body: { raw: "", mode: null, formData: [], urlEncoded: [], files: [] },
+    collectionId: "",
+    folderId: null,
   };
 }
 
@@ -233,7 +228,7 @@ export const useVartaStore = create<VartaState>((set, get) => ({
 
     if (!activeTab || !activeTab.isDirty) return;
     if (activeTab?.request.id.startsWith("new-")) {
-      if (activeTab.request.collection_id === "") {
+      if (activeTab.request.collectionId === "") {
         set({ activeTab: activeTab, isNewReqSaveOpen: true });
         return;
       } else {
