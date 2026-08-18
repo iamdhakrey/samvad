@@ -4,3 +4,9 @@ resolver = "2"
 
 [profile.release]
 codegen-units = 1
+
+[workspace.dependencies]
+ts-rs = "12.0.1"
+reqwest = "0.13.4"
+serde = "1.0.229"
+tokio = "1.52.3"
