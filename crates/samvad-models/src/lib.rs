@@ -302,6 +302,37 @@ pub struct Folder {
     pub sort_order: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(tag = "type", rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub enum RequestItem {
+    Http(ApiRequest),
+    Grpc(GrpcRequest),
+}
+
+impl RequestItem {
+    pub fn id(&self) -> &str {
+        match self {
+            RequestItem::Http(r) => &r.id,
+            RequestItem::Grpc(r) => &r.id,
+        }
+    }
+
+    pub fn collection_id(&self) -> &str {
+        match self {
+            RequestItem::Http(r) => &r.collection_id,
+            RequestItem::Grpc(r) => &r.collection_id,
+        }
+    }
+
+    pub fn folder_id(&self) -> Option<&str> {
+        match self {
+            RequestItem::Http(r) => r.folder_id.as_deref(),
+            RequestItem::Grpc(r) => r.folder_id.as_deref(),
+        }
+    }
+}
+
 /// Nested tree shape sent to the frontend for rendering the sidebar in
 /// one shot, rather than making it re-assemble flat rows.
 #[derive(Debug, Clone, Serialize, TS)]
@@ -311,7 +342,7 @@ pub struct CollectionTree {
     pub collection: Collection,
     pub folders: Vec<FolderNode>,
     /// Requests directly under the collection root (no folder).
-    pub requests: Vec<ApiRequest>,
+    pub requests: Vec<RequestItem>,
 }
 
 #[derive(Debug, Clone, Serialize, TS)]
@@ -320,7 +351,7 @@ pub struct CollectionTree {
 pub struct FolderNode {
     pub folder: Folder,
     pub children: Vec<FolderNode>,
-    pub requests: Vec<ApiRequest>,
+    pub requests: Vec<RequestItem>,
 }
 
 // ---------------------------------------------------------------------
@@ -508,7 +539,7 @@ pub struct ActiveState {
     pub active_theme_id: Option<String>,
     pub active_collection_id: Option<String>,
     pub active_folder_id: Option<String>,
-    pub active_request_id: Option<String>,
+    pub active_item_id: Option<String>,
 }
 
 impl Default for ActiveState {
@@ -519,7 +550,7 @@ impl Default for ActiveState {
             active_theme_id: None,
             active_collection_id: None,
             active_folder_id: None,
-            active_request_id: None,
+            active_item_id: None,
         }
     }
 }
@@ -548,5 +579,128 @@ pub struct WsEvent {
     pub connection_id: String,
     pub direction: String,
     pub data: String,
+    pub timestamp: String,
+}
+
+// -------------------------------------------------------
+// gRPC
+// -------------------------------------------------------
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub enum GrpcMethodType {
+    #[serde(rename = "Unary")]
+    Unary,
+    #[serde(rename = "ClientStreaming")]
+    ClientStreaming,
+    #[serde(rename = "ServerStreaming")]
+    ServerStreaming,
+    #[serde(rename = "BidirectionalStreaming")]
+    BidirectionalStreaming,
+}
+
+impl GrpcMethodType {
+    pub fn as_reqwest(&self) -> reqwest::Method {
+        match self {
+            GrpcMethodType::Unary => reqwest::Method::GET,
+            GrpcMethodType::ClientStreaming => reqwest::Method::POST,
+            GrpcMethodType::ServerStreaming => reqwest::Method::PUT,
+            GrpcMethodType::BidirectionalStreaming => reqwest::Method::PATCH,
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            GrpcMethodType::Unary => "GET",
+            GrpcMethodType::ClientStreaming => "POST",
+            GrpcMethodType::ServerStreaming => "PUT",
+            GrpcMethodType::BidirectionalStreaming => "PATCH",
+        }
+    }
+}
+
+impl FromStr for GrpcMethodType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Case-insensitive matching
+        match s.to_uppercase().as_str() {
+            "UNARY" => Ok(GrpcMethodType::Unary),
+            "CLIENTSTREAMING" => Ok(GrpcMethodType::ClientStreaming),
+            "SERVERSTREAMING" => Ok(GrpcMethodType::ServerStreaming),
+            "BIDIRECTIONALSTREAMING" => Ok(GrpcMethodType::BidirectionalStreaming),
+            _ => Err(format!("Invalid gRPC method: {}", s)),
+        }
+    }
+}
+
+/// Represents an imported `.proto` file in the workspace
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct ProtoFile {
+    pub id: String,
+    pub name: String,
+    /// Absolute path to the .proto file on disk
+    pub path: String,
+    /// Import paths needed by `protoc` (the `-I` flags)
+    pub include_dirs: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GrpcRequest {
+    pub id: String,
+    #[serde(default)]
+    pub collection_id: String,
+    #[serde(default)]
+    pub folder_id: Option<String>,
+    pub name: String,
+
+    /// e.g. "grpc.postman-echo.com:443"
+    pub url: String,
+    /// e.g. "helloworld.Greeter"
+    pub service: String,
+    /// e.g. "SayHello"
+    pub method: String,
+    pub method_type: GrpcMethodType,
+
+    /// Equivalent to HTTP headers
+    pub metadata: Vec<KeyValueRow>,
+    pub auth: AuthConfig,
+
+    /// JSON representation of the Protobuf message payload
+    pub message: String,
+
+    /// If true, use server reflection instead of local proto files
+    pub use_reflection: bool,
+    /// IDs of `ProtoFile` records to compile against if reflection is false
+    pub proto_file_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GrpcResponse {
+    /// gRPC status code (e.g., 0 for OK, 14 for Unavailable)
+    pub status: u16,
+    pub status_text: String,
+    pub time_ms: u128,
+    pub size_bytes: u64,
+    /// Response metadata (including trailing metadata)
+    pub metadata: BTreeMap<String, String>,
+    /// Decoded JSON representation of the returned Protobuf message
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GrpcStreamEvent {
+    pub connection_id: String,
+    pub direction: String, // "Sent" | "Received"
+    pub message: String,
     pub timestamp: String,
 }
