@@ -27,6 +27,7 @@ use crate::ws::{
 };
 
 use crate::commands::auth::{self, PkceSessionState};
+use crate::commands::grpc;
 
 use crate::commands::history::{clear_history, delete_history_entry, list_history};
 
@@ -144,6 +145,8 @@ pub fn run() {
             auth::auth_start_login,
             auth::auth_handle_callback,
             auth::auth_logout,
+            // gRPC
+            grpc::send_grpc_unary,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Samvad application");
