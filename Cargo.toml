@@ -1,5 +1,5 @@
 [workspace]
-members = ["src-tauri", "crates/samvad-auth", "crates/samvad-models", "crates/samvad-db", "crates/samvad-error"]
+members = ["src-tauri", "crates/samvad-auth", "crates/samvad-models", "crates/samvad-db", "crates/samvad-error", "crates/samvad-grpc"]
 resolver = "2"
 
 [profile.release]
