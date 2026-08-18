@@ -4,3 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+prost = "0.14.4"
+prost-reflect = {version = "0.16.5", default-features = false, features = ["serde", "derive"] }
+tonic = {version = "0.14.6", default-features = false, features = ["transport"] }
+ts-rs = { workspace = true }
