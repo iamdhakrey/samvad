@@ -28,7 +28,7 @@ export const FolderNodeItem: React.FC<{
   // Dropdown & Creation States
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [addingItem, setAddingItem] = useState<
-    "folder" | "request" | "ws" | null
+    "folder" | "request" | "ws" | "grpc" | null
   >(null);
   const [newItemName, setNewItemName] = useState("");
 
@@ -57,11 +57,19 @@ export const FolderNodeItem: React.FC<{
       await createFolder(node.folder.collectionId, node.folder.id, newItemName);
     } else if (addingItem === "ws") {
       await createWs(node.folder.collectionId, node.folder.id, newItemName);
+    } else if (addingItem === "grpc") {
+      await createRequest(
+        node.folder.collectionId,
+        node.folder.id,
+        newItemName,
+        "GRPC",
+      );
     } else {
       await createRequest(
         node.folder.collectionId,
         node.folder.id,
         newItemName,
+        "REST",
       );
     }
 
@@ -195,6 +203,17 @@ export const FolderNodeItem: React.FC<{
                     >
                       <FolderPlus className="w-3.5 h-3.5" />
                       Add Folder
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAddingItem("grpc");
+                        setIsMenuOpen(false);
+                        setIsOpen(true);
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-colors cursor-pointer"
+                    >
+                      <FolderPlus className="w-3.5 h-3.5" />
+                      Add GRPC
                     </button>
 
                     <div className="h-px bg-borderMuted my-1 mx-2" />

@@ -38,7 +38,7 @@ export const CollectionsTree: React.FC = () => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [addingItem, setAddingItem] = useState<{
     collectionId: string;
-    type: "folder" | "request" | "ws";
+    type: "folder" | "request" | "ws" | "grpc";
   } | null>(null);
   const [newItemName, setNewItemName] = useState("");
 
@@ -86,9 +86,10 @@ export const CollectionsTree: React.FC = () => {
       await createFolder(addingItem.collectionId, null, newItemName);
     } else if (addingItem.type === "ws") {
       await createWs(addingItem.collectionId, null, newItemName);
+    } else if (addingItem.type === "grpc") {
+      await createRequest(addingItem.collectionId, null, newItemName, "GRPC");
     } else {
-      // null as folderId since it's at the collection root
-      await createRequest(addingItem.collectionId, null, newItemName);
+      await createRequest(addingItem.collectionId, null, newItemName, "REST");
     }
 
     setAddingItem(null);

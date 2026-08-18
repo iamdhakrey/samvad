@@ -51,6 +51,7 @@ export interface WorkspaceStore {
     collectionId: string,
     folderId: string | null,
     name: string,
+    type: "WS" | "REST" | "GRPC",
   ) => Promise<void>;
   createWs: (
     collectionId: string,
@@ -342,6 +343,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     collectionId: string,
     folderId: string | null,
     name: string,
+    type: string,
   ) => {
     set({ isLoadingCollections: true });
     try {
@@ -357,6 +359,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
         collectionid: collectionId,
         folderid: folderId,
         name: name,
+        reqtype: type,
       });
       await get().fetchCollections(); // Refresh the collection list after request creation
       set({ isLoadingCollections: false });

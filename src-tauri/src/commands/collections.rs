@@ -2,7 +2,7 @@ use samvad_error::AppResult;
 use tauri::State;
 
 use crate::state::AppState;
-use samvad_models::{ApiRequest, Collection, CollectionTree, Folder};
+use samvad_models::{ApiRequest, Collection, CollectionTree, Folder, RequestItem};
 
 #[tauri::command]
 pub async fn get_collection_trees(
@@ -80,7 +80,7 @@ pub async fn rename_folder(
 }
 
 #[tauri::command]
-pub async fn get_request(state: State<'_, AppState>, requestid: String) -> AppResult<ApiRequest> {
+pub async fn get_request(state: State<'_, AppState>, requestid: String) -> AppResult<RequestItem> {
     crate::db::collections::get_request(&state.data_dir, &requestid)
 }
 
@@ -90,13 +90,47 @@ pub async fn create_request(
     collectionid: String,
     folderid: Option<String>,
     name: String,
-) -> AppResult<ApiRequest> {
-    crate::db::collections::create_request(
-        &state.data_dir,
-        &collectionid,
-        folderid.as_deref(),
-        &name,
-    )
+    reqtype: String,
+) -> AppResult<RequestItem> {
+    let request_item: RequestItem = match reqtype.to_lowercase().as_str() {
+        "grpc" => {
+            let req = crate::db::collections::create_grpc_request(
+                &state.data_dir,
+                &collectionid,
+                folderid.as_deref(),
+                &name,
+            )?;
+            RequestItem::Grpc(req)
+        }
+        "rest" => {
+            let req = crate::db::collections::create_request(
+                &state.data_dir,
+                &collectionid,
+                folderid.as_deref(),
+                &name,
+            )?;
+            RequestItem::Http(req)
+        }
+        "ws" => {
+            let req = crate::db::collections::create_ws_request(
+                &state.data_dir,
+                &collectionid,
+                folderid.as_deref(),
+                &name,
+            )?;
+            RequestItem::Http(req)
+        }
+        _ => {
+            let req = crate::db::collections::create_request(
+                &state.data_dir,
+                &collectionid,
+                folderid.as_deref(),
+                &name,
+            )?;
+            RequestItem::Http(req)
+        }
+    };
+    Ok(request_item)
 }
 
 #[tauri::command]
@@ -132,14 +166,14 @@ pub async fn rename_request(
 pub async fn duplicate_request(
     state: State<'_, AppState>,
     requestid: String,
-) -> AppResult<ApiRequest> {
+) -> AppResult<RequestItem> {
     crate::db::collections::duplicate_request(&state.data_dir, &requestid)
 }
 
 #[tauri::command]
-pub async fn save_request(state: State<'_, AppState>, request: ApiRequest) -> AppResult<()> {
+pub async fn save_request(state: State<'_, AppState>, request: RequestItem) -> AppResult<()> {
     let _ = crate::db::collections::save_request(&state.data_dir, &request);
-    let _ = crate::db::app_state::set_active_request(&state.data_dir, Some(&request.id));
+    let _ = crate::db::app_state::set_active_request(&state.data_dir, Some(&request.id()));
     Ok(())
 }
 
