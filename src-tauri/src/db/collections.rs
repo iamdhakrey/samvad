@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use samvad_db::{new_id, read_yaml, write_yaml, DataDir};
 use samvad_error::{AppError, AppResult};
 use samvad_models::{
-    ApiRequest, AuthConfig, Collection, CollectionTree, Folder, FolderNode, HttpMethod, RequestBody,
+    ApiRequest, AuthConfig, Collection, CollectionTree, Folder, FolderNode, GrpcMethodType,
+    GrpcRequest, HttpMethod, RequestBody, RequestItem,
 };
 
 // ---------------------------------------------------------------------------
@@ -67,7 +68,7 @@ fn load_requests_for_collection(
     dd: &DataDir,
     workspace_id: &str,
     collection_id: &str,
-) -> AppResult<Vec<ApiRequest>> {
+) -> AppResult<Vec<RequestItem>> {
     let dir = dd.requests_dir(workspace_id, collection_id);
     if !dir.exists() {
         return Ok(Vec::new());
@@ -77,8 +78,14 @@ fn load_requests_for_collection(
         let entry = entry?;
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) == Some("yaml") {
-            let req: ApiRequest = read_yaml(&path)?;
-            requests.push(req);
+            match read_yaml(&path) {
+                Ok(req) => {
+                    requests.push(req);
+                }
+                Err(e) => {
+                    eprintln!("Failed to read YAML at {:?}: {}", path, e);
+                }
+            }
         }
     }
     Ok(requests)
@@ -132,6 +139,7 @@ pub fn get_collection_trees(dd: &DataDir, workspace_id: &str) -> AppResult<Vec<C
             collections.push(col);
         }
     }
+
     collections.sort_by_key(|c| c.sort_order);
 
     let mut trees = Vec::with_capacity(collections.len());
@@ -139,10 +147,10 @@ pub fn get_collection_trees(dd: &DataDir, workspace_id: &str) -> AppResult<Vec<C
         let folders = load_folders_for_collection(dd, workspace_id, &collection.id)?;
         let all_requests = load_requests_for_collection(dd, workspace_id, &collection.id)?;
 
-        let mut requests_by_folder: HashMap<Option<String>, Vec<ApiRequest>> = HashMap::new();
+        let mut requests_by_folder: HashMap<Option<String>, Vec<RequestItem>> = HashMap::new();
         for req in all_requests {
             requests_by_folder
-                .entry(req.folder_id.clone())
+                .entry(req.folder_id().map(String::from))
                 .or_default()
                 .push(req);
         }
@@ -156,14 +164,13 @@ pub fn get_collection_trees(dd: &DataDir, workspace_id: &str) -> AppResult<Vec<C
             requests: root_requests,
         });
     }
-
     Ok(trees)
 }
 
 fn build_folder_tree(
     all_folders: &[Folder],
     parent_id: Option<&str>,
-    requests_by_folder: &mut HashMap<Option<String>, Vec<ApiRequest>>,
+    requests_by_folder: &mut HashMap<Option<String>, Vec<RequestItem>>,
 ) -> Vec<FolderNode> {
     all_folders
         .iter()
@@ -177,7 +184,7 @@ fn build_folder_tree(
             FolderNode {
                 folder: folder.clone(),
                 children,
-                requests,
+                requests: requests,
             }
         })
         .collect()
@@ -337,7 +344,7 @@ pub fn delete_folder(dd: &DataDir, id: &str) -> AppResult<()> {
 
 // -- Requests ---------------------------------------------------------------
 
-pub fn get_request(dd: &DataDir, id: &str) -> AppResult<ApiRequest> {
+pub fn get_request(dd: &DataDir, id: &str) -> AppResult<RequestItem> {
     let (ws_id, col_id) = find_request_location(dd, id)?;
     let path = dd.request_path(&ws_id, &col_id, id);
     read_yaml(&path)
@@ -362,7 +369,8 @@ pub fn create_request(
         auth: AuthConfig::default(),
         body: RequestBody::default(),
     };
-    save_request(dd, &request)?;
+    let req = RequestItem::Http(request.clone());
+    save_request(dd, &req)?;
     Ok(request)
 }
 
@@ -385,17 +393,45 @@ pub fn create_ws_request(
         auth: AuthConfig::default(),
         body: RequestBody::default(),
     };
-    save_request(dd, &request)?;
+    let req = RequestItem::Http(request.clone());
+    save_request(dd, &req)?;
+    Ok(request)
+}
+
+pub fn create_grpc_request(
+    dd: &DataDir,
+    collection_id: &str,
+    folder_id: Option<&str>,
+    name: &str,
+) -> AppResult<GrpcRequest> {
+    let request = GrpcRequest {
+        id: new_id(),
+        collection_id: collection_id.to_string(),
+        folder_id: folder_id.map(str::to_string),
+        name: name.to_string(),
+        method: GrpcMethodType::Unary.as_str().to_string(),
+        method_type: GrpcMethodType::Unary,
+        url: String::new(),
+        auth: AuthConfig::default(),
+        message: String::new(),
+        use_reflection: false,
+        proto_file_ids: Vec::new(),
+        service: String::new(),
+        metadata: vec![],
+    };
+
+    let req = RequestItem::Grpc(request.clone());
+    save_request(dd, &req)?;
     Ok(request)
 }
 
 /// Upsert — used both to create a brand-new request row (frontend
 /// generates the id client-side when a tab opens) and to save edits.
-pub fn save_request(dd: &DataDir, request: &ApiRequest) -> AppResult<()> {
-    let ws_id = find_collection_workspace(dd, &request.collection_id)?;
-    let reqs_dir = dd.requests_dir(&ws_id, &request.collection_id);
+pub fn save_request(dd: &DataDir, request: &RequestItem) -> AppResult<()> {
+    let ws_id = find_collection_workspace(dd, &request.collection_id())?;
+    let reqs_dir = dd.requests_dir(&ws_id, &request.collection_id());
     std::fs::create_dir_all(&reqs_dir)?;
-    let path = dd.request_path(&ws_id, &request.collection_id, &request.id);
+    let path = dd.request_path(&ws_id, &request.collection_id(), &request.id());
     write_yaml(&path, request)
 }
 
@@ -408,16 +444,32 @@ pub fn delete_request(dd: &DataDir, id: &str) -> AppResult<()> {
     Ok(())
 }
 
-pub fn duplicate_request(dd: &DataDir, id: &str) -> AppResult<ApiRequest> {
+pub fn duplicate_request(dd: &DataDir, id: &str) -> AppResult<RequestItem> {
     let mut original = get_request(dd, id)?;
-    original.id = new_id();
-    original.name = format!("{} (copy)", original.name);
+    let new_req_id = new_id();
+    match &mut original {
+        RequestItem::Http(req) => {
+            req.id = new_req_id;
+            req.name = format!("{} (copy)", req.name);
+        }
+        RequestItem::Grpc(req) => {
+            req.id = new_req_id;
+            req.name = format!("{} (copy)", req.name);
+        }
+    }
     save_request(dd, &original)?;
     Ok(original)
 }
 
 pub fn rename_request(dd: &DataDir, id: &str, name: &str) -> AppResult<()> {
     let mut request = get_request(dd, id)?;
-    request.name = name.to_string();
+    match &mut request {
+        RequestItem::Http(req) => {
+            req.name = name.to_string();
+        }
+        RequestItem::Grpc(req) => {
+            req.name = name.to_string();
+        }
+    }
     save_request(dd, &request)
 }

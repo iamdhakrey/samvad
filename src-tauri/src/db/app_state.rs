@@ -26,7 +26,7 @@ pub fn set_active_theme(dd: &DataDir, theme_id: &str) -> AppResult<()> {
 
 pub fn set_active_request(dd: &DataDir, request_id: Option<&str>) -> AppResult<()> {
     let mut state = get_active_state(dd)?;
-    state.active_request_id = request_id.map(str::to_string);
+    state.active_item_id = request_id.map(str::to_string);
     write_yaml(&dd.app_state_path(), &state)
 }
 
