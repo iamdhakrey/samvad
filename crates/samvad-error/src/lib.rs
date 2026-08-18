@@ -34,6 +34,23 @@ pub enum AppError {
     #[error("serialization error (yaml): {0}")]
     Yaml(#[from] serde_yaml::Error),
 
+    #[error("grpc error: {0}")]
+    Tonic(#[from] tonic::ConnectError),
+
+    #[error("gRPC engine error: {0}")]
+    Grpc(String),
+
+    #[error("grpc error: {0}")]
+    Prost(#[from] prost_reflect::DescriptorError),
+
+    #[error("grpc connection error: {0}")]
+    TonicConnect(#[from] tonic::transport::Error), // updated to generic transport error
+
+    #[error("grpc status error [{}] {}", .0.code(), .0.message())]
+    TonicStatus(#[from] tonic::Status),
+
+    // #[error("{0}")]
+    // StringError(#[from] std::string::String),
     #[error("{0}")]
     Other(String),
 }
