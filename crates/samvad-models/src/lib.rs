@@ -635,6 +635,24 @@ impl FromStr for GrpcMethodType {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub enum GrpcEventType {
+    Info,
+    Error,
+    ClientMessage,
+    ServerMessage,
+    ConnectionStart,
+    ConnectionEnd,
+}
+
+impl Default for GrpcEventType {
+    fn default() -> Self {
+        GrpcEventType::Info
+    }
+}
+
 /// Represents an imported `.proto` file in the workspace
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]

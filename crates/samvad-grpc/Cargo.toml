@@ -12,3 +12,13 @@ tokio = { workspace = true }
 protox = "0.9.1"
 serde_json = { workspace = true }
 http = "1.5.0"
+tonic-reflection = "0.14.6"
+tokio-stream = "0.1.19"
+samvad-error = {path= "../samvad-error"}
+hyper-util = "0.1.20"
+hyper-rustls = "0.27.9"
+rustls = "0.23.43"
+rustls-native-certs = "0.8.4"
+async-recursion = "1.1.1"
+serde.workspace = true
+thiserror = "2.0.20"
