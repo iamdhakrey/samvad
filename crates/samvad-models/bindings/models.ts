@@ -45,7 +45,7 @@ export type CollectionTree = { collection: Collection, folders: Array<FolderNode
 /**
  * Requests directly under the collection root (no folder).
  */
-requests: Array<ApiRequest>, };
+requests: Array<RequestItem>, };
 
 export type CookieRow = { id: string, name: string, value: string, domain: string, };
 
@@ -57,7 +57,57 @@ export type EnvironmentWithVariables = { environment: Environment, variables: Ar
 
 export type Folder = { id: string, collectionId: string, parentFolderId: string | null, name: string, sortOrder: bigint, };
 
-export type FolderNode = { folder: Folder, children: Array<FolderNode>, requests: Array<ApiRequest>, };
+export type FolderNode = { folder: Folder, children: Array<FolderNode>, requests: Array<RequestItem>, };
+
+export type GrpcEventType = "info" | "error" | "clientMessage" | "serverMessage" | "connectionStart" | "connectionEnd";
+
+export type GrpcMethodType = "Unary" | "ClientStreaming" | "ServerStreaming" | "BidirectionalStreaming";
+
+export type GrpcRequest = { id: string, collectionId: string, folderId: string | null, name: string, 
+/**
+ * e.g. "grpc.postman-echo.com:443"
+ */
+url: string, 
+/**
+ * e.g. "helloworld.Greeter"
+ */
+service: string, 
+/**
+ * e.g. "SayHello"
+ */
+method: string, methodType: GrpcMethodType, 
+/**
+ * Equivalent to HTTP headers
+ */
+metadata: Array<KeyValueRow>, auth: AuthConfig, 
+/**
+ * JSON representation of the Protobuf message payload
+ */
+message: string, 
+/**
+ * If true, use server reflection instead of local proto files
+ */
+useReflection: boolean, 
+/**
+ * IDs of `ProtoFile` records to compile against if reflection is false
+ */
+protoFileIds: Array<string>, };
+
+export type GrpcResponse = { 
+/**
+ * gRPC status code (e.g., 0 for OK, 14 for Unavailable)
+ */
+status: number, statusText: string, timeMs: bigint, sizeBytes: bigint, 
+/**
+ * Response metadata (including trailing metadata)
+ */
+metadata: { [key in string]: string }, 
+/**
+ * Decoded JSON representation of the returned Protobuf message
+ */
+message: string, };
+
+export type GrpcStreamEvent = { connectionId: string, direction: string, message: string, timestamp: string, };
 
 export type HistoryEntry = { id: string, requestId: string | null, name: string | null, method: HttpMethod, url: string, status: number, durationMs: bigint, createdAt: string, };
 
@@ -84,7 +134,22 @@ hooks: Array<PluginHook>, };
 
 export type PluginRecord = { id: string, name: string, version: string, description: string, enabled: boolean, installPath: string, hooks: Array<PluginHook>, installedAt: string, };
 
+/**
+ * Represents an imported `.proto` file in the workspace
+ */
+export type ProtoFile = { id: string, name: string, 
+/**
+ * Absolute path to the .proto file on disk
+ */
+path: string, 
+/**
+ * Import paths needed by `protoc` (the `-I` flags)
+ */
+includeDirs: Array<string>, };
+
 export type RequestBody = { mode: BodyMode | null, raw?: string, formData?: Array<KeyValueRow>, urlEncoded?: Array<KeyValueRow>, files?: Array<UploadedFile>, };
+
+export type RequestItem = { "type": "http" } & ApiRequest | { "type": "grpc" } & GrpcRequest;
 
 export type Theme = { id: string, name: string, isBuiltin: boolean, tokens: ThemeTokens, };
 

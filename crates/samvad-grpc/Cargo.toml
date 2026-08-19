@@ -22,3 +22,6 @@ rustls-native-certs = "0.8.4"
 async-recursion = "1.1.1"
 serde.workspace = true
 thiserror = "2.0.20"
+samvad-models = { version = "0.1.0", path = "../samvad-models" }
+tower = "0.5.3"
+tower-service = "0.3.3"

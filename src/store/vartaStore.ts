@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { RequestTab, WsMessage } from "../types";
+import { RequestTab, WsMessage, GrpcMessage, GrpcService, GrpcMethod, GrpcMetadataRow, GrpcCallStatus } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import { sendNativeRequest } from "../services/rest";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
@@ -55,6 +55,35 @@ interface VartaState {
   fetchHistory: () => Promise<void>;
   deleteHistoryEntry: (id: string) => Promise<void>;
   clearHistory: () => Promise<void>;
+
+  // ── gRPC state ────────────────────────────────────────────────────────
+  grpcServerAddress: string;
+  grpcTlsEnabled: boolean;
+  grpcCallStatus: GrpcCallStatus;
+  grpcMessages: GrpcMessage[];
+  grpcServices: GrpcService[];
+  grpcSelectedService: GrpcService | null;
+  grpcSelectedMethod: GrpcMethod | null;
+  grpcRequestBody: string;
+  grpcMetadata: GrpcMetadataRow[];
+  grpcReflectionLoading: boolean;
+  grpcLastLatencyMs: number | null;
+
+  // ── gRPC actions (UI stubs — backend wired separately) ────────────────
+  setGrpcServerAddress: (addr: string) => void;
+  setGrpcTlsEnabled: (enabled: boolean) => void;
+  setGrpcSelectedService: (service: GrpcService | null) => void;
+  setGrpcSelectedMethod: (method: GrpcMethod | null) => void;
+  setGrpcRequestBody: (body: string) => void;
+  setGrpcMetadata: (rows: GrpcMetadataRow[]) => void;
+  addGrpcMessage: (msg: GrpcMessage) => void;
+  clearGrpcMessages: () => void;
+  setGrpcCallStatus: (status: GrpcCallStatus) => void;
+  setGrpcServices: (services: GrpcService[]) => void;
+  setGrpcReflectionLoading: (loading: boolean) => void;
+  invokeGrpc: () => Promise<void>;
+  cancelGrpcCall: () => Promise<void>;
+  loadGrpcReflection: () => Promise<void>;
 }
 
 let tabCounter = 0;
@@ -87,6 +116,19 @@ export const useVartaStore = create<VartaState>((set, get) => ({
   activeTab: null,
   historyEntries: [],
   isNewReqSaveOpen: false,
+
+  // ── gRPC initial state ───────────────────────────────────────────────
+  grpcServerAddress: "",
+  grpcTlsEnabled: false,
+  grpcCallStatus: "idle",
+  grpcMessages: [],
+  grpcServices: [],
+  grpcSelectedService: null,
+  grpcSelectedMethod: null,
+  grpcRequestBody: "{\n  \n}",
+  grpcMetadata: [{ id: "m1", key: "", value: "", enabled: true }],
+  grpcReflectionLoading: false,
+  grpcLastLatencyMs: null,
 
   setIsNewReqSaveOpen: (open) => set({ isNewReqSaveOpen: open }),
   closeNewReqSave: () => set({ isNewReqSaveOpen: false }),
@@ -540,6 +582,91 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       }));
     } catch (error) {
       console.error("Failed to delete history entry:", error);
+    }
+  },
+
+  // ── gRPC action implementations ──────────────────────────────────────
+  setGrpcServerAddress: (addr) => set({ grpcServerAddress: addr }),
+  setGrpcTlsEnabled: (enabled) => set({ grpcTlsEnabled: enabled }),
+  setGrpcSelectedService: (service) =>
+    set({ grpcSelectedService: service, grpcSelectedMethod: null }),
+  setGrpcSelectedMethod: (method) => set({ grpcSelectedMethod: method }),
+  setGrpcRequestBody: (body) => set({ grpcRequestBody: body }),
+  setGrpcMetadata: (rows) => set({ grpcMetadata: rows }),
+  addGrpcMessage: (msg) =>
+    set((s) => ({ grpcMessages: [...s.grpcMessages, msg] })),
+  clearGrpcMessages: () => set({ grpcMessages: [], grpcLastLatencyMs: null }),
+  setGrpcCallStatus: (status) => set({ grpcCallStatus: status }),
+  setGrpcServices: (services) => set({ grpcServices: services }),
+  setGrpcReflectionLoading: (loading) =>
+    set({ grpcReflectionLoading: loading }),
+
+  invokeGrpc: async () => {
+    const { grpcSelectedMethod, grpcServerAddress, grpcCallStatus, grpcSelectedService, grpcRequestBody, grpcMetadata } = get();
+    if (!grpcSelectedMethod || !grpcServerAddress || !grpcSelectedService || grpcCallStatus === "invoking" || grpcCallStatus === "streaming") return;
+
+    set({ grpcCallStatus: "invoking", grpcMessages: [], grpcLastLatencyMs: null });
+    
+    try {
+      const request = {
+        id: "temp-id",
+        collectionId: "temp-collection",
+        folderId: null,
+        name: "temp-name",
+        url: grpcServerAddress,
+        service: grpcSelectedService.fullName,
+        method: grpcSelectedMethod.name,
+        methodType: "Unary",
+        metadata: grpcMetadata,
+        auth: { type: "none" },
+        message: grpcRequestBody,
+        useReflection: true,
+        protoFileIds: [],
+      };
+      
+      const response = await invoke<any>("grpc_invoke", { request });
+      
+      set({
+        grpcCallStatus: "idle",
+        grpcLastLatencyMs: response.timeMs,
+        grpcMessages: [{
+            direction: "received",
+            message: response.message,
+            timestamp: new Date().toISOString()
+        }]
+      });
+    } catch (e: any) {
+      console.error("[gRPC] invokeGrpc error:", e);
+      set({ 
+        grpcCallStatus: "error",
+        grpcMessages: [{
+            direction: "received",
+            message: `Error: ${e}`,
+            timestamp: new Date().toISOString()
+        }]
+      });
+    }
+  },
+
+  cancelGrpcCall: async () => {
+    set({ grpcCallStatus: "cancelled" });
+    // TODO: wire streaming backend cancel
+    console.log("[gRPC] cancelGrpcCall — streaming backend not yet wired");
+    setTimeout(() => set({ grpcCallStatus: "idle" }), 800);
+  },
+
+  loadGrpcReflection: async () => {
+    const { grpcServerAddress } = get();
+    if (!grpcServerAddress) return;
+    set({ grpcReflectionLoading: true, grpcServices: [] });
+    try {
+      const services = await invoke<GrpcService[]>("grpc_reflect", { address: grpcServerAddress });
+      set({ grpcServices: services });
+    } catch (e: any) {
+      console.error("[gRPC] loadGrpcReflection error:", e);
+      // Optional: Maybe show an error toast
+    } finally {
+      set({ grpcReflectionLoading: false });
     }
   },
 }));

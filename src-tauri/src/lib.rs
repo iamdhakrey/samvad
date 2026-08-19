@@ -146,7 +146,10 @@ pub fn run() {
             auth::auth_handle_callback,
             auth::auth_logout,
             // gRPC
-            grpc::send_grpc_unary,
+            grpc::grpc_reflect,
+            grpc::grpc_invoke,
+            grpc::grpc_cancel,
+            grpc::grpc_send_message,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Samvad application");

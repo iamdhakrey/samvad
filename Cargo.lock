@@ -3941,6 +3941,7 @@ dependencies = [
  "rustls",
  "rustls-native-certs",
  "samvad-error",
+ "samvad-models",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
@@ -3948,6 +3949,8 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tonic-reflection",
+ "tower",
+ "tower-service",
  "ts-rs",
 ]
 
