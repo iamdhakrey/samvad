@@ -3,9 +3,9 @@ import { MethodStyles } from "../../types";
 import { Check, Edit2, Trash2, X } from "lucide-react";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { useVartaStore } from "../../store/vartaStore";
-import { ApiRequest, HttpMethod } from "@samvad-internal/models";
+import { HttpMethod, RequestItem as Item } from "@samvad-internal/models";
 
-export const RequestItem: React.FC<{ request: ApiRequest }> = ({ request }) => {
+export const RequestItem: React.FC<{ request: Item }> = ({ request }) => {
   const { deleteRequest, renameRequest } = useWorkspaceStore();
   const activeTabId = useVartaStore((s) => s.activeTabId);
 

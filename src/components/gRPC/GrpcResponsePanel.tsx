@@ -1,4 +1,3 @@
-
 import { useRef, useEffect } from "react";
 import {
   ArrowUp,
@@ -11,11 +10,13 @@ import {
   XCircle,
   Loader2,
   Radio,
+  AlertCircle,
 } from "lucide-react";
 import { useVartaStore } from "../../store/vartaStore";
 import { GrpcCallStatus, GrpcMessage } from "../../types";
 
 interface GrpcResponsePanelProps {
+  error?: string;
   isMobile?: boolean;
 }
 
@@ -65,6 +66,7 @@ const STATUS_CONFIG: Record<
 
 export default function GrpcResponsePanel({
   isMobile = false,
+  error,
 }: GrpcResponsePanelProps) {
   const messages = useVartaStore((s) => s.grpcMessages);
   const callStatus = useVartaStore((s) => s.grpcCallStatus);
@@ -80,6 +82,21 @@ export default function GrpcResponsePanel({
 
   const statusCfg = STATUS_CONFIG[callStatus];
 
+  // 2. Error view state
+  if (error) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
+        <AlertCircle className="text-error" size={28} />
+        <h3 className="text-sm font-semibold text-text-primary">
+          Request Failed
+        </h3>
+        <p className="max-w-md font-mono text-xs text-error bg-error/10 border border-error/20 rounded-md px-3 py-2 whitespace-pre-wrap">
+          {error}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col">
       {/* Status bar */}
@@ -91,7 +108,9 @@ export default function GrpcResponsePanel({
         {/* Status indicator */}
         <div className="flex items-center gap-2">
           <div className={`h-2 w-2 rounded-full ${statusCfg.dotClass}`} />
-          <span className={`font-medium flex items-center gap-1.5 ${statusCfg.textClass}`}>
+          <span
+            className={`font-medium flex items-center gap-1.5 ${statusCfg.textClass}`}
+          >
             {statusCfg.icon}
             {statusCfg.label}
           </span>
@@ -188,7 +207,9 @@ function EmptyState({ callStatus }: { callStatus: GrpcCallStatus }) {
             <Radio size={20} className="text-text-muted" />
           </div>
           <span className="text-sm text-text-muted">
-            Select a service & method, then click <strong className="text-text-secondary">Invoke</strong> to see responses here.
+            Select a service & method, then click{" "}
+            <strong className="text-text-secondary">Invoke</strong> to see
+            responses here.
           </span>
         </>
       )}
@@ -198,7 +219,13 @@ function EmptyState({ callStatus }: { callStatus: GrpcCallStatus }) {
 
 // ── Message row ─────────────────────────────────────────────────────────
 
-function MessageRow({ msg, isMobile }: { msg: GrpcMessage; isMobile: boolean }) {
+function MessageRow({
+  msg,
+  isMobile,
+}: {
+  msg: GrpcMessage;
+  isMobile: boolean;
+}) {
   const isSent = msg.direction === "sent";
 
   // Format message data

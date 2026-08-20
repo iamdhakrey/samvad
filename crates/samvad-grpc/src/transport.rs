@@ -55,7 +55,7 @@ pub(crate) fn get_transport(
     validate_certificates: bool,
     // client_cert: Option<ClientCertificateConfig>,
 ) -> AppResult<Client<HttpsConnector<HttpConnector>, Body>> {
-    let mut tls_config = if validate_certificates {
+    let tls_config = if validate_certificates {
         // Load platform-native certificate roots (critical for production)
         let certs =
             rustls_native_certs::load_native_certs().expect("Failed to load native certificates");
@@ -75,9 +75,7 @@ pub(crate) fn get_transport(
             .with_no_client_auth()
     };
 
-    // ALPN is strictly required for gRPC over TLS.
-    // Without this, the TLS handshake succeeds but the server drops the TCP connection.
-    tls_config.alpn_protocols = vec![b"h2".to_vec()];
+    // REMOVED: tls_config.alpn_protocols = vec![b"h2".to_vec()];
 
     let mut http = HttpConnector::new();
     http.enforce_http(false);
@@ -88,9 +86,8 @@ pub(crate) fn get_transport(
         .enable_http2()
         .build();
 
-    // Use `.build(connector)`, NOT `.build_http()`
     let client = Client::builder(TokioExecutor::new())
-        .pool_max_idle_per_host(0) // Prevents idle connections from closing prematurely in gRPC
+        .pool_max_idle_per_host(0)
         .http2_only(true)
         .build(connector);
 

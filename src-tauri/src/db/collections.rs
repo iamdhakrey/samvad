@@ -409,7 +409,7 @@ pub fn create_grpc_request(
         collection_id: collection_id.to_string(),
         folder_id: folder_id.map(str::to_string),
         name: name.to_string(),
-        method: GrpcMethodType::Unary.as_str().to_string(),
+        method: "grpc".to_string(),
         method_type: GrpcMethodType::Unary,
         url: String::new(),
         auth: AuthConfig::default(),

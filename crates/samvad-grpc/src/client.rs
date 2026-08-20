@@ -1,5 +1,4 @@
-use std::{collections::BTreeMap, str::FromStr};
-
+use crate::codec::DynamicCodec;
 use crate::error::Error::GenericError;
 use crate::error::{Error, Result};
 use crate::transport::get_transport;
@@ -8,7 +7,12 @@ use http::Uri;
 use hyper_rustls::HttpsConnector;
 use hyper_util::client::legacy::Client;
 use hyper_util::client::legacy::connect::HttpConnector;
+use prost::Message;
+use prost_reflect::DescriptorPool;
+use samvad_error::AppError;
 use samvad_error::AppResult;
+use samvad_models::{GrpcMethod, GrpcService, GrpcStreamType};
+use std::{collections::BTreeMap, str::FromStr};
 use tokio_stream::StreamExt as _;
 use tonic::Request;
 use tonic::body::Body;
@@ -20,6 +24,7 @@ use tonic_reflection::pb::v1::{
     ListServiceResponse, ServerReflectionRequest, ServiceResponse,
 };
 use tonic_reflection::pb::{v1, v1alpha};
+use tower::Service;
 
 pub struct AutoReflectionClient<T = Client<HttpsConnector<HttpConnector>, Body>> {
     use_v1alpha: bool,
@@ -200,55 +205,87 @@ fn to_v1_msg_response(
     }
 }
 
-use samvad_models::{GrpcService, GrpcMethod, GrpcStreamType};
-use prost_reflect::DescriptorPool;
-use samvad_error::AppError;
-use prost::Message;
-use tower::Service;
+pub async fn reflect_services(
+    uri_str: &str,
+    validate_certificates: bool,
+) -> AppResult<Vec<GrpcService>> {
+    let normalized_uri = if uri_str.starts_with("http://") || uri_str.starts_with("https://") {
+        uri_str.to_string()
+    } else {
+        let scheme = if validate_certificates {
+            "https"
+        } else {
+            "http"
+        };
+        format!("{}://{}", scheme, uri_str)
+    };
 
-pub async fn reflect_services(uri_str: &str, validate_certificates: bool) -> AppResult<Vec<GrpcService>> {
-    let uri = uri_str.parse::<http::Uri>().map_err(|e| AppError::GrpcError(format!("Invalid URI: {}", e)))?;
+    let uri = normalized_uri
+        .parse::<http::Uri>()
+        .map_err(|e| AppError::GrpcError(format!("Invalid URI: {}", e)))?;
+    // let uri = uri_str
+    //     .parse::<http::Uri>()
+    //     .map_err(|e| AppError::GrpcError(format!("Invalid URI: {}", e)))?;
     let mut client = AutoReflectionClient::new(&uri, validate_certificates, 4 * 1024 * 1024)?;
-    
+
     // 1. List services
     let list_req = MessageRequest::ListServices(String::new());
-    let list_resp = client.send_reflection_request(list_req, &Default::default()).await
+    let list_resp = client
+        .send_reflection_request(list_req, &Default::default())
+        .await
         .map_err(|e| AppError::GrpcError(format!("Reflection request failed: {}", e)))?;
-    
+
     let services = match list_resp {
         MessageResponse::ListServicesResponse(resp) => resp.service,
-        _ => return Err(AppError::GrpcError("Unexpected response for ListServices".to_string())),
+        _ => {
+            return Err(AppError::GrpcError(
+                "Unexpected response for ListServices".to_string(),
+            ));
+        }
     };
-    
+
     let mut pool = DescriptorPool::new();
-    
+
     for service in &services {
         // Skip built-in reflection services
-        if service.name == "grpc.reflection.v1alpha.ServerReflection" || service.name == "grpc.reflection.v1.ServerReflection" {
+        if service.name == "grpc.reflection.v1alpha.ServerReflection"
+            || service.name == "grpc.reflection.v1.ServerReflection"
+        {
             continue;
         }
-        
+
         let file_req = MessageRequest::FileContainingSymbol(service.name.clone());
-        let file_resp = client.send_reflection_request(file_req, &Default::default()).await
+        let file_resp = client
+            .send_reflection_request(file_req, &Default::default())
+            .await
             .map_err(|e| AppError::GrpcError(format!("Reflection request failed: {}", e)))?;
-        
+
         match file_resp {
             MessageResponse::FileDescriptorResponse(resp) => {
                 for fd in resp.file_descriptor_proto {
-                    let fd_proto = prost_reflect::prost_types::FileDescriptorProto::decode(fd.as_slice())
-                        .map_err(|e| AppError::GrpcError(format!("Failed to decode FileDescriptorProto: {}", e)))?;
+                    let fd_proto =
+                        prost_reflect::prost_types::FileDescriptorProto::decode(fd.as_slice())
+                            .map_err(|e| {
+                                AppError::GrpcError(format!(
+                                    "Failed to decode FileDescriptorProto: {}",
+                                    e
+                                ))
+                            })?;
                     let _ = pool.add_file_descriptor_proto(fd_proto);
                 }
             }
             _ => continue,
         }
     }
-    
+
     let mut grpc_services = Vec::new();
     for service_desc in pool.services() {
         let mut methods = Vec::new();
         for method_desc in service_desc.methods() {
-            let stream_type = match (method_desc.is_client_streaming(), method_desc.is_server_streaming()) {
+            let stream_type = match (
+                method_desc.is_client_streaming(),
+                method_desc.is_server_streaming(),
+            ) {
                 (false, false) => GrpcStreamType::Unary,
                 (false, true) => GrpcStreamType::ServerStream,
                 (true, false) => GrpcStreamType::ClientStream,
@@ -271,74 +308,135 @@ pub async fn reflect_services(uri_str: &str, validate_certificates: bool) -> App
     Ok(grpc_services)
 }
 
-pub async fn get_descriptor_pool_from_reflection(uri_str: &str, validate_certificates: bool, service_name: &str) -> AppResult<DescriptorPool> {
-    let uri = uri_str.parse::<http::Uri>().map_err(|e| AppError::GrpcError(format!("Invalid URI: {}", e)))?;
+pub async fn get_descriptor_pool_from_reflection(
+    uri_str: &str,
+    validate_certificates: bool,
+    service_name: &str,
+) -> AppResult<DescriptorPool> {
+    let normalized_uri = if uri_str.starts_with("http://") || uri_str.starts_with("https://") {
+        uri_str.to_string()
+    } else {
+        let scheme = if validate_certificates {
+            "https"
+        } else {
+            "http"
+        };
+        format!("{}://{}", scheme, uri_str)
+    };
+
+    let uri = normalized_uri
+        .parse::<http::Uri>()
+        .map_err(|e| AppError::GrpcError(format!("Invalid URI: {}", e)))?;
     let mut client = AutoReflectionClient::new(&uri, validate_certificates, 4 * 1024 * 1024)?;
     let mut pool = DescriptorPool::new();
-    
+
     let file_req = MessageRequest::FileContainingSymbol(service_name.to_string());
-    let file_resp = client.send_reflection_request(file_req, &Default::default()).await
+    let file_resp = client
+        .send_reflection_request(file_req, &Default::default())
+        .await
         .map_err(|e| AppError::GrpcError(format!("Reflection request failed: {}", e)))?;
-    
+
     match file_resp {
         MessageResponse::FileDescriptorResponse(resp) => {
             for fd in resp.file_descriptor_proto {
-                let fd_proto = prost_reflect::prost_types::FileDescriptorProto::decode(fd.as_slice())
-                    .map_err(|e| AppError::GrpcError(format!("Failed to decode FileDescriptorProto: {}", e)))?;
+                let fd_proto =
+                    prost_reflect::prost_types::FileDescriptorProto::decode(fd.as_slice())
+                        .map_err(|e| {
+                            AppError::GrpcError(format!(
+                                "Failed to decode FileDescriptorProto: {}",
+                                e
+                            ))
+                        })?;
                 let _ = pool.add_file_descriptor_proto(fd_proto);
             }
         }
-        _ => return Err(AppError::GrpcError("Unexpected response for FileContainingSymbol".to_string())),
+        _ => {
+            return Err(AppError::GrpcError(
+                "Unexpected response for FileContainingSymbol".to_string(),
+            ));
+        }
     }
-    
+
     Ok(pool)
 }
-
-use crate::codec::DynamicCodec;
 
 pub async fn invoke_unary(
     uri_str: &str,
     validate_certificates: bool,
     method: prost_reflect::MethodDescriptor,
-    metadata: BTreeMap<String, String>,
+    _metadata: BTreeMap<String, String>,
     payload: &str,
 ) -> AppResult<String> {
-    let uri = uri_str.parse::<http::Uri>().map_err(|e| AppError::GrpcError(format!("Invalid URI: {}", e)))?;
+    let normalized_uri = if uri_str.starts_with("http://") || uri_str.starts_with("https://") {
+        uri_str.to_string()
+    } else {
+        let scheme = if validate_certificates {
+            "https"
+        } else {
+            "http"
+        };
+        format!("{}://{}", scheme, uri_str)
+    };
+
+    let uri = normalized_uri
+        .parse::<http::Uri>()
+        .map_err(|e| AppError::GrpcError(format!("Invalid URI: {}", e)))?;
     let mut transport = get_transport(validate_certificates)?;
-    
+
     let svc = tower::service_fn(move |mut req: http::Request<_>| {
         let uri = uri.clone();
-        let path_and_query = req.uri().path_and_query().map(|pq| pq.as_str()).unwrap_or("");
-        let full_uri = format!("{}{}", uri.to_string().trim_end_matches('/'), path_and_query).parse::<http::Uri>().unwrap();
+        println!("uri {:?}", uri);
+        let path_and_query = req
+            .uri()
+            .path_and_query()
+            .map(|pq| pq.as_str())
+            .unwrap_or("");
+        let full_uri = format!(
+            "{}{}",
+            uri.to_string().trim_end_matches('/'),
+            path_and_query
+        )
+        .parse::<http::Uri>()
+        .unwrap();
         *req.uri_mut() = full_uri;
         transport.call(req)
     });
-    
+
     let mut grpc = tonic::client::Grpc::new(svc);
-    
-    let path = http::uri::PathAndQuery::try_from(format!("/{}", method.full_name()))
+
+    // let path = http::uri::PathAndQuery::try_from(format!("/{}", method.full_name()))
+    //     .map_err(|e| AppError::GrpcError(format!("Invalid method path: {}", e)))?;
+
+    let path_str = format!("/{}/{}", method.parent_service().full_name(), method.name());
+    let path = http::uri::PathAndQuery::try_from(path_str)
         .map_err(|e| AppError::GrpcError(format!("Invalid method path: {}", e)))?;
-        
+
     // Parse json payload to DynamicMessage using DeserializeSeed
     let mut deserializer = serde_json::Deserializer::from_str(payload);
-    let msg: prost_reflect::DynamicMessage = serde::de::DeserializeSeed::deserialize(method.input(), &mut deserializer)
-        .map_err(|e| AppError::GrpcError(format!("Failed to parse JSON into protobuf: {}", e)))?;
-        
-    let mut req = tonic::Request::new(msg);
-    decorate_req(&metadata, &mut req)
-        .map_err(|e| AppError::GrpcError(format!("Failed to decorate req: {}", e)))?;
-    
+    let msg: prost_reflect::DynamicMessage =
+        serde::de::DeserializeSeed::deserialize(method.input(), &mut deserializer).map_err(
+            |e| AppError::GrpcError(format!("Failed to parse JSON into protobuf: {}", e)),
+        )?;
+
+    let req = tonic::Request::new(msg);
+    // decorate_req(&metadata, &mut req)
+    //     .map_err(|e| AppError::GrpcError(format!("Failed to decorate req: {}", e)))?;
+
     let codec = DynamicCodec::new(method.clone());
-    grpc.ready().await.map_err(|e| AppError::GrpcError(format!("Connection not ready: {}", e)))?;
-    
-    let res = grpc.unary(req, path, codec).await
+    grpc.ready()
+        .await
+        .map_err(|e| AppError::GrpcError(format!("Connection not ready: {}", e)))?;
+
+    let res = grpc
+        .unary(req, path, codec)
+        .await
         .map_err(|e| AppError::GrpcError(format!("Unary call failed: {}", e)))?;
-    
+
     let resp_msg = res.into_inner();
-    
+
     // Convert back to JSON
     let json_resp = serde_json::to_string(&resp_msg)
         .map_err(|e| AppError::GrpcError(format!("Failed to serialize response to JSON: {}", e)))?;
-        
+
     Ok(json_resp)
 }

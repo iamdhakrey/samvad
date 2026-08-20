@@ -58,6 +58,9 @@ function RequestPanel({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [saveActiveRequest]);
 
+  if (tab.request.type === "grpc") {
+    return;
+  }
   return (
     <div className="flex h-full flex-col">
       <RequestBar tab={tab} isMobile={isMobile} />
