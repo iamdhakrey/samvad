@@ -16,6 +16,7 @@ import { Menu } from "lucide-react";
 import { UpdaterOverlay } from "./components/UpdaterOverlay";
 import Titlebar from "./components/TitleBar";
 import { NewReqSaveModal } from "./components/NewRequestSaveModal";
+import GrpcEditor from "./components/gRPC";
 
 export default function App() {
   useAuth0Desktop();
@@ -33,6 +34,7 @@ export default function App() {
 
   // Detect if active tab is a WebSocket tab
   const isWsTab = activeTab?.request.method === "WS";
+  const isGrpcTab = activeTab?.request.type === "grpc";
 
   // Initialize Tauri WS event listeners on mount
   useEffect(() => {
@@ -88,9 +90,16 @@ export default function App() {
               </div>
             )}
 
-            <div className="min-h-0 flex-1 overflow-hidden">
+            {activeTab && isGrpcTab ? (
+              <GrpcEditor isMobile={isMobile} />
+            ) : (
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <RequestEditor isMobile={isMobile} />
+              </div>
+            )}
+            {/*<div className="min-h-0 flex-1 overflow-hidden">
               <RequestEditor isMobile={isMobile} />
-            </div>
+            </div>*/}
 
             {activeTab && (
               <>

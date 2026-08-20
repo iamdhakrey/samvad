@@ -38,7 +38,7 @@ pub enum AppError {
     Tonic(#[from] tonic::ConnectError),
 
     #[error("gRPC engine error: {0}")]
-    Grpc(String),
+    GrpcError(String),
 
     #[error("grpc error: {0}")]
     Prost(#[from] prost_reflect::DescriptorError),

@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { sendNativeRequest } from "../services/rest";
 import {
-  ApiRequest,
   ApiResponse,
   HttpMethod,
+  RequestItem,
   UploadedFile,
 } from "@samvad-internal/models";
 
@@ -60,10 +60,11 @@ export const HttpClient: React.FC = () => {
     setError(null);
     setResponse(null);
 
-    const payload: ApiRequest = {
+    const payload: RequestItem = {
       id: "req_" + Date.now(),
       name: "My API Request",
       method: method as HttpMethod,
+      type: "http",
       url: url,
       params: [],
       headers: [

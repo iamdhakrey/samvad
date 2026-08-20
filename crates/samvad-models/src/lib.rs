@@ -635,6 +635,54 @@ impl FromStr for GrpcMethodType {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub enum GrpcEventType {
+    Info,
+    Error,
+    ClientMessage,
+    ServerMessage,
+    ConnectionStart,
+    ConnectionEnd,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export, export_to = "models.ts")]
+pub enum GrpcStreamType {
+    Unary,
+    ServerStream,
+    ClientStream,
+    BidiStream,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GrpcMethod {
+    pub name: String,
+    pub full_name: String,
+    pub request_type: String,
+    pub response_type: String,
+    pub stream_type: GrpcStreamType,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GrpcService {
+    pub name: String,
+    pub full_name: String,
+    pub methods: Vec<GrpcMethod>,
+}
+
+impl Default for GrpcEventType {
+    fn default() -> Self {
+        GrpcEventType::Info
+    }
+}
+
 /// Represents an imported `.proto` file in the workspace
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]

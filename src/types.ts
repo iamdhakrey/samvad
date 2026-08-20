@@ -5,6 +5,7 @@ import {
   EnvironmentVariable,
   EnvironmentWithVariables,
   HttpMethod,
+  RequestItem,
   UploadedFile,
   WsSavedMessage,
 } from "@samvad-internal/models";
@@ -48,7 +49,7 @@ export type WsStatus = "disconnected" | "connecting" | "connected";
 
 export interface RequestTab {
   id: string;
-  request: ApiRequest;
+  request: RequestItem;
   isDirty: boolean;
   response?: ApiResponse;
   isSending: boolean;
@@ -167,3 +168,57 @@ export const MethodStyles: Record<HttpMethod, string> = {
   WS: "text-method-ws",
   QUERY: "text-method-query",
 };
+
+// ── gRPC types ───────────────────────────────────────────────────────
+
+export type GrpcStreamType =
+  "unary" | "server_stream" | "client_stream" | "bidi_stream";
+
+export type GrpcCallStatus =
+  "idle" | "invoking" | "streaming" | "ok" | "error" | "cancelled";
+
+export interface GrpcMessage {
+  id: string;
+
+  direction: "sent" | "received";
+
+  data: string; // JSON-stringified proto message
+
+  timestamp: string;
+
+  statusCode?: string; // gRPC status code label e.g. "OK", "UNAVAILABLE"
+
+  isError?: boolean;
+
+  latencyMs?: number;
+}
+
+export interface GrpcMethod {
+  name: string;
+
+  fullName: string; // package.ServiceName/MethodName
+
+  requestType: string;
+
+  responseType: string;
+
+  streamType: GrpcStreamType;
+}
+
+export interface GrpcService {
+  name: string;
+
+  fullName: string;
+
+  methods: GrpcMethod[];
+}
+
+export interface GrpcMetadataRow {
+  id: string;
+
+  key: string;
+
+  value: string;
+
+  enabled: boolean;
+}

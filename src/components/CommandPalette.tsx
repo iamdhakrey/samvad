@@ -11,7 +11,7 @@ import {
 import { useVartaStore } from "../store/vartaStore";
 import { useSettingsStore } from "../store/settingStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
-import { ApiRequest } from "@samvad-internal/models";
+import { RequestItem } from "@samvad-internal/models";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -95,7 +95,7 @@ export default function CommandPalette({
     for (const tree of collectionTrees) {
       const collectionName = tree.collection.name;
 
-      const addReq = (req: ApiRequest, folderName?: string) => {
+      const addReq = (req: RequestItem, folderName?: string) => {
         const breadcrumb = folderName
           ? `${collectionName} › ${folderName}`
           : collectionName;
