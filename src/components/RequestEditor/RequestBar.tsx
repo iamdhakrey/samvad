@@ -13,7 +13,7 @@ interface UrlInputProps {
   disabled?: boolean;
 }
 
-const UrlAutocompleteInput: React.FC<UrlInputProps> = ({
+export const UrlAutocompleteInput: React.FC<UrlInputProps> = ({
   url,
   onChange,
   onEnter,
@@ -28,7 +28,6 @@ const UrlAutocompleteInput: React.FC<UrlInputProps> = ({
 
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
-
   // 1. Get Active Variables
   const activeEnv = environments.find(
     (e) => e.environment.id === activeEnvironmentId,
@@ -222,7 +221,7 @@ interface RequestBarProps {
   isMobile?: boolean;
 }
 
-export default function RequestBar({ tab, isMobile }: RequestBarProps) {
+export default function HttpRequestBar({ tab, isMobile }: RequestBarProps) {
   const updateActiveRequest = useVartaStore((s) => s.updateActiveRequest);
   const sendActiveRequest = useVartaStore((s) => s.sendActiveRequest);
   const connectWebSocket = useVartaStore((s) => s.connectWebSocket);

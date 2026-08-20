@@ -1,27 +1,79 @@
+use crate::state::AppState;
 use samvad_error::{AppError, AppResult};
-use samvad_grpc::client::{compile_proto, invoke_unary};
-use tauri::command;
-#[command]
-pub async fn send_grpc_unary(
-    proto_path: String,
-    target_url: String,
-    service_name: String,
-    method_name: String,
-    json_payload: String,
-) -> AppResult<String> {
-    // In production, cache the compile_proto result to avoid rebuilding the AST every click.
-    // let method = compile_proto(&proto_path, &service_name, &method_name).map_err(|e| )?;
-    let method = compile_proto(&proto_path, &service_name, &method_name)
-        .map_err(|e| AppError::Grpc(e.to_string()))?;
-    let res = invoke_unary(
-        &target_url,
-        &service_name,
-        &method_name,
-        method,
-        &json_payload,
-    )
-    .await
-    .map_err(|e| AppError::Grpc(e.to_string()))?;
+use samvad_grpc::client::{get_descriptor_pool_from_reflection, invoke_unary, reflect_services};
+use samvad_models::{GrpcRequest, GrpcResponse, GrpcService};
+use std::collections::BTreeMap;
+use std::time::Instant;
+use tauri::{command, State};
 
-    Ok(res)
+#[command]
+pub async fn grpc_reflect(
+    state: State<'_, AppState>,
+    address: String,
+) -> AppResult<Vec<GrpcService>> {
+    let settings = crate::db::settings::get_settings(&state.data_dir)?;
+    let res = reflect_services(&address, settings.verify_ssl_certificates).await;
+    println!("resr");
+    return res;
+}
+
+#[command]
+pub async fn grpc_invoke(
+    state: State<'_, AppState>,
+    _window: tauri::Window,
+    request: GrpcRequest,
+) -> AppResult<GrpcResponse> {
+    let settings = crate::db::settings::get_settings(&state.data_dir)?;
+    let validate_certificates = settings.verify_ssl_certificates;
+
+    let start = Instant::now();
+
+    let pool =
+        get_descriptor_pool_from_reflection(&request.url, validate_certificates, &request.service)
+            .await?;
+    let service_desc = pool
+        .get_service_by_name(&request.service)
+        .ok_or_else(|| AppError::GrpcError(format!("Service {} not found", request.service)))?;
+
+    let method_desc = service_desc
+        .methods()
+        .find(|m| m.name() == request.method)
+        .ok_or_else(|| AppError::GrpcError(format!("Method {} not found", request.method)))?;
+
+    let mut metadata = BTreeMap::new();
+    for row in request.metadata {
+        if row.enabled {
+            metadata.insert(row.key, row.value);
+        }
+    }
+
+    let message = invoke_unary(
+        &request.url,
+        validate_certificates,
+        method_desc,
+        metadata,
+        &request.message,
+    )
+    .await?;
+
+    let duration_ms = start.elapsed().as_millis();
+
+    Ok(GrpcResponse {
+        status: 0,
+        status_text: "OK".to_string(),
+        time_ms: duration_ms,
+        size_bytes: message.len() as u64,
+        metadata: BTreeMap::new(),
+        message,
+    })
+}
+
+#[command]
+pub async fn grpc_cancel(_connection_id: String) -> AppResult<()> {
+    Ok(())
+}
+
+#[command]
+pub async fn grpc_send_message(_connection_id: String, _message: String) -> AppResult<()> {
+    Ok(())
 }

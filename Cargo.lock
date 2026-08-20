@@ -1890,7 +1890,9 @@ dependencies = [
  "http",
  "hyper",
  "hyper-util",
+ "log",
  "rustls",
+ "rustls-native-certs",
  "tokio",
  "tokio-rustls",
  "tower-service",
@@ -3929,13 +3931,26 @@ dependencies = [
 name = "samvad-grpc"
 version = "0.1.0"
 dependencies = [
+ "async-recursion",
  "http",
+ "hyper-rustls",
+ "hyper-util",
  "prost",
  "prost-reflect",
  "protox",
+ "rustls",
+ "rustls-native-certs",
+ "samvad-error",
+ "samvad-models",
+ "serde",
  "serde_json",
+ "thiserror 2.0.20",
  "tokio",
+ "tokio-stream",
  "tonic",
+ "tonic-reflection",
+ "tower",
+ "tower-service",
  "ts-rs",
 ]
 
@@ -5362,6 +5377,31 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "tonic-prost"
+version = "0.14.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50849f68853be452acf590cde0b146665b8d507b3b8af17261df47e02c209ea0"
+dependencies = [
+ "bytes",
+ "prost",
+ "tonic",
+]
+
+[[package]]
+name = "tonic-reflection"
+version = "0.14.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "acccd136a4bf19810a1fde9c74edc6129b42a66b44d0c1c8aaa67aeb49a146a7"
+dependencies = [
+ "prost",
+ "prost-types",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-prost",
 ]
 
 [[package]]
