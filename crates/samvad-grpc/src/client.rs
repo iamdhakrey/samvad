@@ -437,6 +437,6 @@ pub async fn invoke_unary(
     // Convert back to JSON
     let json_resp = serde_json::to_string(&resp_msg)
         .map_err(|e| AppError::GrpcError(format!("Failed to serialize response to JSON: {}", e)))?;
-
+    // println!(" json res[p{:?}", json_resp);
     Ok(json_resp)
 }

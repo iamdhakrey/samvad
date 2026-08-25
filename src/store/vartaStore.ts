@@ -652,6 +652,14 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       grpcLastLatencyMs: null,
     });
 
+    // Map the local stream type to the Rust GrpcMethodType enum
+    const streamToMethodType: Record<string, string> = {
+      unary: "Unary",
+      server_stream: "ServerStreaming",
+      client_stream: "ClientStreaming",
+      bidi_stream: "BidirectionalStreaming",
+    };
+
     try {
       const request = {
         id: "temp-id",
@@ -661,9 +669,9 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         url: activeTab.request.url,
         service: grpcSelectedService.fullName,
         method: grpcSelectedMethod.name,
-        methodType: "Unary",
+        methodType: streamToMethodType[grpcSelectedMethod.streamType] || "Unary",
         metadata: grpcMetadata,
-        auth: { type: "none" },
+        auth: { type: "none", basic: null, bearer: null, apiKey: null },
         message: grpcRequestBody,
         useReflection: true,
         protoFileIds: [],
@@ -672,14 +680,16 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       const response = await invoke<any>("grpc_invoke", { request });
 
       set({
-        grpcCallStatus: "idle",
-        grpcLastLatencyMs: response.timeMs,
+        grpcCallStatus: "ok",
+        grpcLastLatencyMs: Number(response.timeMs),
         grpcMessages: [
           {
-            id: response.id,
+            id: crypto.randomUUID(),
             direction: "received",
             data: response.message,
             timestamp: new Date().toISOString(),
+            statusCode: response.statusText || "OK",
+            latencyMs: Number(response.timeMs),
           },
         ],
       });
@@ -689,11 +699,12 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         grpcCallStatus: "error",
         grpcMessages: [
           {
-            id: "1",
+            id: crypto.randomUUID(),
             direction: "received",
-            data: `Error: ${e}`,
+            data: typeof e === "string" ? e : JSON.stringify(e, null, 2),
             timestamp: new Date().toISOString(),
             isError: true,
+            statusCode: "ERROR",
           },
         ],
       });

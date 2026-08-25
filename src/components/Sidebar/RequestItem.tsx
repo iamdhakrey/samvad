@@ -3,7 +3,7 @@ import { MethodStyles } from "../../types";
 import { Check, Edit2, Trash2, X } from "lucide-react";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { useVartaStore } from "../../store/vartaStore";
-import { HttpMethod, RequestItem as Item } from "@samvad-internal/models";
+import { RequestItem as Item } from "@samvad-internal/models";
 
 export const RequestItem: React.FC<{ request: Item }> = ({ request }) => {
   const { deleteRequest, renameRequest } = useWorkspaceStore();
@@ -70,9 +70,9 @@ export const RequestItem: React.FC<{ request: Item }> = ({ request }) => {
             className={`flex items-center gap-2.5 truncate transition-colors`}
           >
             <span
-              className={`text-[10px] font-bold w-10 text-right ${MethodStyles[request.method as HttpMethod] || "text-text-muted"}`}
+              className={`text-[10px] font-bold w-10 text-right ${request.type === "grpc" ? "text-method-grpc" : (MethodStyles[request.method as string] || "text-text-muted")}`}
             >
-              {request.method}
+              {request.type === "grpc" ? "gRPC" : request.method}
             </span>
             <span className="truncate">{request.name}</span>
           </div>

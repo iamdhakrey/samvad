@@ -1,4 +1,3 @@
-
 import { ChevronDown, Network } from "lucide-react";
 import { useVartaStore } from "../../store/vartaStore";
 import { GrpcService, GrpcMethod, GrpcStreamType } from "../../types";
@@ -7,7 +6,10 @@ interface GrpcServicePickerProps {
   isMobile?: boolean;
 }
 
-const STREAM_TYPE_STYLES: Record<GrpcStreamType, { label: string; className: string }> = {
+const STREAM_TYPE_STYLES: Record<
+  GrpcStreamType,
+  { label: string; className: string }
+> = {
   unary: {
     label: "Unary",
     className: "bg-success/15 text-success border-success/30",
@@ -26,7 +28,9 @@ const STREAM_TYPE_STYLES: Record<GrpcStreamType, { label: string; className: str
   },
 };
 
-export default function GrpcServicePicker({ isMobile = false }: GrpcServicePickerProps) {
+export default function GrpcServicePicker({
+  isMobile = false,
+}: GrpcServicePickerProps) {
   const services = useVartaStore((s) => s.grpcServices);
   const selectedService = useVartaStore((s) => s.grpcSelectedService);
   const selectedMethod = useVartaStore((s) => s.grpcSelectedMethod);
@@ -42,17 +46,22 @@ export default function GrpcServicePicker({ isMobile = false }: GrpcServicePicke
   const handleMethodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (!selectedService) return;
     const method =
-      selectedService.methods.find((m) => m.fullName === e.target.value) ?? null;
+      selectedService.methods.find((m) => m.fullName === e.target.value) ??
+      null;
     setSelectedMethod(method);
   };
 
   // No services loaded yet — show hint
   if (services.length === 0 && !reflectionLoading) {
     return (
-      <div className={`flex items-center gap-2 border-b border-border ${isMobile ? "px-3 py-2.5" : "px-4 py-2.5"}`}>
+      <div
+        className={`flex items-center gap-2 border-b border-border ${isMobile ? "px-3 py-2.5" : "px-4 py-2.5"}`}
+      >
         <Network size={14} className="text-text-muted" />
         <span className="text-xs text-text-muted italic">
-          Enter a server address and click <strong className="text-text-secondary">Reflect</strong> to discover services
+          Enter a server address and click{" "}
+          <strong className="text-text-secondary">Reflect</strong> to discover
+          services
         </span>
       </div>
     );
@@ -61,7 +70,9 @@ export default function GrpcServicePicker({ isMobile = false }: GrpcServicePicke
   // Loading state
   if (reflectionLoading) {
     return (
-      <div className={`flex items-center gap-2 border-b border-border ${isMobile ? "px-3 py-2.5" : "px-4 py-2.5"}`}>
+      <div
+        className={`flex items-center gap-2 border-b border-border ${isMobile ? "px-3 py-2.5" : "px-4 py-2.5"}`}
+      >
         <div className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
         <span className="text-xs text-text-secondary">
           Discovering services…
@@ -94,9 +105,7 @@ export default function GrpcServicePicker({ isMobile = false }: GrpcServicePicke
         </div>
 
         {/* Type info */}
-        {selectedMethod && (
-          <TypeInfo method={selectedMethod} />
-        )}
+        {selectedMethod && <TypeInfo method={selectedMethod} />}
       </div>
     );
   }
@@ -122,9 +131,7 @@ export default function GrpcServicePicker({ isMobile = false }: GrpcServicePicke
       />
 
       {/* Stream type badge */}
-      {selectedMethod && (
-        <StreamBadge streamType={selectedMethod.streamType} />
-      )}
+      {selectedMethod && <StreamBadge streamType={selectedMethod.streamType} />}
 
       {/* Request / Response types */}
       {selectedMethod && (
@@ -158,7 +165,11 @@ function ServiceSelect({
           Select service…
         </option>
         {services.map((s) => (
-          <option key={s.fullName} value={s.fullName} className="bg-panel text-text-primary">
+          <option
+            key={s.fullName}
+            value={s.fullName}
+            className="bg-panel text-text-primary"
+          >
             {s.name}
           </option>
         ))}
@@ -194,7 +205,11 @@ function MethodSelect({
           Select method…
         </option>
         {methods.map((m) => (
-          <option key={m.fullName} value={m.fullName} className="bg-panel text-text-primary">
+          <option
+            key={m.fullName}
+            value={m.fullName}
+            className="bg-panel text-text-primary"
+          >
             {m.name}
           </option>
         ))}
