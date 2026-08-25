@@ -93,40 +93,39 @@ export default function App() {
             {activeTab && isGrpcTab ? (
               <GrpcEditor isMobile={isMobile} />
             ) : (
-              <div className="min-h-0 flex-1 overflow-hidden">
-                <RequestEditor isMobile={isMobile} />
-              </div>
-            )}
-            {/*<div className="min-h-0 flex-1 overflow-hidden">
-              <RequestEditor isMobile={isMobile} />
-            </div>*/}
-
-            {activeTab && (
               <>
-                {/* Drag-resize handle — desktop only */}
-                {!isMobile && (
-                  <div
-                    onMouseDown={onMouseDown}
-                    className="h-1 shrink-0 cursor-row-resize bg-border hover:bg-primary/60"
-                  />
-                )}
-
-                {/* Response / WebSocket panel */}
-                <div
-                  style={isMobile ? { height: "45vh" } : { height }}
-                  className="shrink-0 border-t border-border bg-bg"
-                >
-                  {isWsTab ? (
-                    <WebSocketPanel tab={activeTab} isMobile={isMobile} />
-                  ) : (
-                    <ResponsePanel
-                      response={activeTab.response}
-                      isSending={activeTab.isSending}
-                      error={activeTab.error}
-                      isMobile={isMobile}
-                    />
-                  )}
+                <div className="min-h-0 flex-1 overflow-hidden">
+                  <RequestEditor isMobile={isMobile} />
                 </div>
+
+                {activeTab && (
+                  <>
+                    {/* Drag-resize handle — desktop only */}
+                    {!isMobile && (
+                      <div
+                        onMouseDown={onMouseDown}
+                        className="h-1 shrink-0 cursor-row-resize bg-border hover:bg-primary/60"
+                      />
+                    )}
+
+                    {/* Response / WebSocket panel */}
+                    <div
+                      style={isMobile ? { height: "45vh" } : { height }}
+                      className="shrink-0 border-t border-border bg-bg"
+                    >
+                      {isWsTab ? (
+                        <WebSocketPanel tab={activeTab} isMobile={isMobile} />
+                      ) : (
+                        <ResponsePanel
+                          response={activeTab.response}
+                          isSending={activeTab.isSending}
+                          error={activeTab.error}
+                          isMobile={isMobile}
+                        />
+                      )}
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>
