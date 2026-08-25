@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use samvad_error::{AppError, AppResult};
+use samvad_error::AppResult;
 use samvad_grpc::client::{
     compile_proto_files, descriptor_pool_to_services, find_method_descriptor,
     get_descriptor_pool_from_reflection, invoke_unary, reflect_services,
