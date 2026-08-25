@@ -18,8 +18,16 @@ export const NewReqSaveModal: React.FC<NewRequestSaveModalProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const collectionTrees = useWorkspaceStore((s) => s.collectionTrees);
+  const collections = useWorkspaceStore((s) => s.collections);
+  const activeCollectionId = useWorkspaceStore((s) => s.activeCollectionId);
+  const setActiveCollection = useWorkspaceStore((s) => s.setActiveCollection);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>("");
+
+  useEffect(() => {
+    if (activeCollectionId && !selectedCollectionId) {
+      setSelectedCollectionId(activeCollectionId);
+    }
+  }, [activeCollectionId, selectedCollectionId]);
 
   // Handle Escape key and Outside Click to close dropdown/modal
   useEffect(() => {
@@ -53,22 +61,25 @@ export const NewReqSaveModal: React.FC<NewRequestSaveModalProps> = ({
 
   if (!isNewReqSaveOpen) return null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedCollectionId) return;
     if (activeTab?.request.id.startsWith("new-")) {
       activeTab.request.collectionId = selectedCollectionId;
       saveActiveRequest();
+      if (selectedCollectionId !== activeCollectionId) {
+        await setActiveCollection(selectedCollectionId);
+      }
     }
 
     closeNewReqSave();
   };
 
   // Find the selected collection name for the custom dropdown button
-  const selectedCollection = collectionTrees.find(
-    (c) => c.collection.id === selectedCollectionId,
+  const selectedCollection = collections.find(
+    (c) => c.id === selectedCollectionId,
   );
   const displayLabel = selectedCollection
-    ? selectedCollection.collection.name
+    ? selectedCollection.name
     : "Select Collection...";
 
   return (
@@ -115,7 +126,7 @@ export const NewReqSaveModal: React.FC<NewRequestSaveModalProps> = ({
               Collection
             </label>
 
-            {collectionTrees.length === 0 ? (
+            {collections.length === 0 ? (
               <div className="p-4 border border-border rounded-md bg-panel text-center text-sm text-text-muted flex items-center justify-center">
                 No collections available in this workspace.
               </div>
@@ -147,23 +158,21 @@ export const NewReqSaveModal: React.FC<NewRequestSaveModalProps> = ({
                 {isOpen && (
                   <div className="absolute top-full left-0 right-0 mt-1.5 z-50 rounded-lg bg-panel-raised border border-border shadow-elevated overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="max-h-60 overflow-y-auto py-1">
-                      {collectionTrees.map((collection) => (
+                      {collections.map((collection) => (
                         <button
-                          key={collection.collection.id}
+                          key={collection.id}
                           onClick={() => {
-                            setSelectedCollectionId(collection.collection.id);
+                            setSelectedCollectionId(collection.id);
                             setIsOpen(false);
                           }}
                           className={`flex items-center gap-2 w-full px-3 py-2 text-left text-sm hover:bg-panel hover:text-text-primary transition-colors cursor-pointer ${
-                            collection.collection.id === selectedCollectionId
+                            collection.id === selectedCollectionId
                               ? "text-text-primary bg-panel/60 font-medium"
                               : "text-text-secondary"
                           }`}
                         >
                           <Folder className="w-4 h-4 shrink-0" />
-                          <span className="truncate">
-                            {collection.collection.name}
-                          </span>
+                          <span className="truncate">{collection.name}</span>
                         </button>
                       ))}
                     </div>
