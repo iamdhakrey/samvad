@@ -365,14 +365,22 @@ pub fn find_method_descriptor(
     service_name: &str,
     method_name: &str,
 ) -> AppResult<prost_reflect::MethodDescriptor> {
-    let service_desc = pool
-        .get_service_by_name(service_name)
-        .ok_or_else(|| AppError::GrpcError(format!("Service '{}' not found in descriptor pool", service_name)))?;
+    let service_desc = pool.get_service_by_name(service_name).ok_or_else(|| {
+        AppError::GrpcError(format!(
+            "Service '{}' not found in descriptor pool",
+            service_name
+        ))
+    })?;
 
     let method_desc = service_desc
         .methods()
         .find(|m| m.name() == method_name || m.full_name() == method_name)
-        .ok_or_else(|| AppError::GrpcError(format!("Method '{}' not found in service '{}'", method_name, service_name)))?;
+        .ok_or_else(|| {
+            AppError::GrpcError(format!(
+                "Method '{}' not found in service '{}'",
+                method_name, service_name
+            ))
+        })?;
 
     Ok(method_desc)
 }
