@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
-import { Search, Settings, X } from "lucide-react";
-import { WorkspaceSelector } from "./WorkspaceSelector";
+import { useEffect } from "react";
+import { Settings, X } from "lucide-react";
 import { CollectionsTree } from "./CollectionTree";
 import { EnvironmentSelector } from "./EnvironmentSelector";
 import { useWorkspaceStore } from "../../store/workspaceStore";
@@ -12,7 +11,6 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isMobile, onClose }: SidebarProps) {
-  const [query, setQuery] = useState("");
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const fetchEnvironments = useWorkspaceStore((s) => s.fetchEnvironments);
 
@@ -51,25 +49,6 @@ export default function Sidebar({ isMobile, onClose }: SidebarProps) {
         </div>
       )}
 
-      {/* Workspace switcher */}
-      <WorkspaceSelector />
-
-      {/* Divider */}
-      <div className="h-px bg-borderMuted w-full" />
-
-      {/* Search */}
-      <div className="px-3 pt-3">
-        <div className="flex items-center gap-2 rounded-md border border-border bg-panel px-2.5 py-1.5">
-          <Search size={13} className="text-text-secondary" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search requests"
-            className="w-full bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
-          />
-          {!isMobile && <kbd className="kbd">⌘P</kbd>}
-        </div>
-      </div>
 
       {/* Collections tree */}
       <CollectionsTree />

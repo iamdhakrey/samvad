@@ -56,22 +56,22 @@ export function UserProfileMenu() {
   const initials = getInitials(user?.name, user?.email);
 
   return (
-    <div ref={menuRef} className="relative flex items-center h-full">
+    <div ref={menuRef} className="relative flex items-center">
       {/* Trigger button */}
       <button
         id="user-profile-btn"
         onClick={() => setOpen((p) => !p)}
-        className="inline-flex h-full items-center gap-1.5 px-2.5 transition hover:bg-surface-900/50 text-text-secondary hover:text-text-primary"
+        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-panel transition-colors cursor-pointer"
         aria-label={isAuthenticated ? "User profile menu" : "Sign in"}
         aria-haspopup="true"
         aria-expanded={open}
       >
         {isLoading ? (
-          <Loader2 size={16} className="animate-spin text-primary" />
+          <Loader2 size={13} className="animate-spin text-primary" />
         ) : isAuthenticated && user ? (
           <>
             {/* Avatar */}
-            <span className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full ring-1 ring-primary/40">
+            <span className="relative h-4 w-4 shrink-0 overflow-hidden rounded-full ring-1 ring-primary/40">
               {user.picture ? (
                 <img
                   src={user.picture}
@@ -85,13 +85,17 @@ export function UserProfileMenu() {
                 </span>
               )}
             </span>
+
             <ChevronDown
               size={11}
               className={`shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
             />
           </>
         ) : (
-          <User size={15} />
+          <span className="flex items-center gap-1.5">
+            <User size={13} />
+            <span>Sign in</span>
+          </span>
         )}
       </button>
 
@@ -99,7 +103,7 @@ export function UserProfileMenu() {
       {open && (
         <div
           id="user-profile-dropdown"
-          className="absolute right-0 top-full z-200 mt-1 w-56 overflow-hidden rounded-lg border border-border bg-panel shadow-elevated"
+          className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-lg border border-border bg-panel-raised shadow-elevated animate-in fade-in zoom-in-95 duration-100"
           style={{
             animation:
               "profileMenuIn 0.14s cubic-bezier(0.16,1,0.3,1) forwards",

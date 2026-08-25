@@ -12,7 +12,6 @@ import { MethodStyles } from "../../types";
 import { useMobileDetect } from "../../hooks/useMobileDetect";
 import { useVartaStore } from "../../store/vartaStore";
 import { useSettingsStore } from "../../store/settingStore";
-import { UserProfileMenu } from "../UserProfileMenu";
 import { HttpMethod } from "@samvad-internal/models";
 
 export default function TabStrip() {
@@ -100,7 +99,6 @@ export default function TabStrip() {
           >
             <Settings size={15} />
           </button>
-          <UserProfileMenu />
         </div>
       )}
 
