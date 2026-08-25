@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSettingsStore } from "../store/settingStore";
+import { useSettingsStore, DEFAULT_FONT_SETTINGS } from "../store/settingStore";
 // import { AppSettings } from "../types";
 import {
   X,
@@ -11,8 +11,10 @@ import {
   Palette,
   Keyboard,
   CornerDownLeft,
+  Type,
 } from "lucide-react";
 import { AppSettings } from "@samvad-internal/models";
+import { invoke } from "@tauri-apps/api/core";
 
 type SettingsTab = "general" | "appearance" | "shortcuts";
 
@@ -359,20 +361,6 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   );
 };
 
-// ─── Appearance Tab ──────────────────────────────────────────────────────────
-
-const AppearanceTab: React.FC = () => (
-  <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
-    <Palette className="w-10 h-10 text-text-muted opacity-40" />
-    <p className="text-sm font-medium text-text-secondary">
-      Theme Customisation
-    </p>
-    <p className="text-xs text-text-muted max-w-xs leading-relaxed">
-      Custom theme support is coming soon. You'll be able to choose from
-      built-in themes or create your own colour palette.
-    </p>
-  </div>
-);
 
 // ─── Shortcuts Tab ───────────────────────────────────────────────────────────
 
@@ -465,3 +453,206 @@ const ToggleRow: React.FC<ToggleRowProps> = ({
     </div>
   </label>
 );
+
+
+const AppearanceTab: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) => {
+  const settingsFont = useSettingsStore(s => s.settings?.font);
+  const font = settingsFont || DEFAULT_FONT_SETTINGS;
+  const updateFontSettings = useSettingsStore(s => s.updateFontSettings);
+
+  const {
+    appFontFamily,
+    fontFamily,
+    customFontPath,
+    fontSize,
+    lineHeight,
+    enableLigatures
+  } = font;
+
+  const setAppFontFamily = (family: string) => updateFontSettings({ appFontFamily: family });
+  const setFontFamily = (family: string) => updateFontSettings({ fontFamily: family, customFontPath: null });
+  const setLigatures = (enable: boolean) => updateFontSettings({ enableLigatures: enable });
+  const setFontSize = (size: number) => updateFontSettings({ fontSize: size });
+  const setLineHeight = (height: number) => updateFontSettings({ lineHeight: height });
+
+  const [availableFonts, setAvailableFonts] = useState<string[]>([]);
+  const [isLoadingFonts, setIsLoadingFonts] = useState(true);
+
+  // Fetch installed system fonts from Tauri backend
+  useEffect(() => {
+    const fetchFonts = async () => {
+      try {
+        setIsLoadingFonts(true);
+        const fonts = await invoke<string[]>('get_system_fonts');
+        setAvailableFonts(fonts);
+      } catch (error) {
+        console.error("Failed to load system fonts:", error);
+      } finally {
+        setIsLoadingFonts(false);
+      }
+    };
+    fetchFonts();
+  }, []);
+
+  // const handleSelectFontFile = async () => {
+  //   try {
+  //     const selectedPath = await open({
+  //       multiple: false,
+  //       filters: [{ name: 'Fonts', extensions: ['ttf', 'otf', 'woff2'] }]
+  //     });
+
+  //     if (selectedPath && typeof selectedPath === 'string') {
+  //       // Extract a basic name from the path for the CSS rule
+  //       const fontName = selectedPath.split(/[/\\]/).pop()?.split('.')[0] || "CustomFont";
+  //       await loadCustomFont(fontName, selectedPath);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error picking font file:", error);
+  //   }
+  // };
+
+  return (
+    <div className={`flex flex-col gap-6 ${isMobile ? "p-4" : "p-6"}`}>
+      <section className="flex flex-col gap-4">
+        <h3 className="text-[11px] font-bold tracking-wider text-text-muted uppercase">
+          App Typography
+        </h3>
+        
+        {/* App Font Family Selection */}
+        <div className="flex flex-col gap-1.5">
+          <label className="flex items-center gap-2 text-sm font-medium text-text-primary">
+            <Type className="w-4 h-4 text-text-secondary" />
+            App Font Family
+          </label>
+          <div className="flex gap-2">
+            <select
+              value={appFontFamily}
+              onChange={(e) => setAppFontFamily(e.target.value)}
+              disabled={isLoadingFonts}
+              className="input-shell flex-1 bg-panel text-sm disabled:opacity-50"
+            >
+              {isLoadingFonts ? (
+                <option>Loading system fonts...</option>
+              ) : (
+                availableFonts.map((font) => (
+                  <option key={font} value={font}>
+                    {font}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h3 className="text-[11px] font-bold tracking-wider text-text-muted uppercase">
+          Editor Typography
+        </h3>
+
+        {/* Font Family Selection */}
+        <div className="flex flex-col gap-1.5">
+          <label className="flex items-center gap-2 text-sm font-medium text-text-primary">
+            <Type className="w-4 h-4 text-text-secondary" />
+            Font Family
+          </label>
+          <div className="flex gap-2">
+            <select
+              value={customFontPath ? "custom" : fontFamily}
+              onChange={(e) => {
+                if (e.target.value !== "custom") {
+                  setFontFamily(e.target.value);
+                }
+              }}
+              disabled={isLoadingFonts}
+              className="input-shell flex-1 bg-panel text-sm disabled:opacity-50"
+            >
+              {customFontPath && (
+                <option value="custom" disabled>
+                  {fontFamily} (Custom File)
+                </option>
+              )}
+              {isLoadingFonts ? (
+                <option>Loading system fonts...</option>
+              ) : (
+                availableFonts.map((font) => (
+                  <option key={font} value={font}>
+                    {font}
+                  </option>
+                ))
+              )}
+            </select>
+
+            {/*<button
+              onClick={handleSelectFontFile}
+              title="Load custom font file"
+              className="flex shrink-0 items-center justify-center rounded-md border border-border bg-panel px-3 hover:bg-borderMuted transition-colors"
+            >
+              <FolderOpen className="w-4 h-4 text-text-secondary" />
+            </button>*/}
+          </div>
+          {customFontPath && (
+            <span className="text-xs text-text-muted truncate mt-1">
+              Loaded: {customFontPath}
+            </span>
+          )}
+        </div>
+
+        {/* Font Size & Line Height */}
+        <div className={`flex items-center gap-4 ${isMobile ? "flex-wrap" : ""}`}>
+          <div className="flex flex-col gap-1.5 flex-1">
+            <label className="text-sm font-medium text-text-primary">
+              Font Size (px)
+            </label>
+            <input
+              type="number"
+              min="8"
+              max="40"
+              value={fontSize}
+              onChange={(e) => setFontSize(parseInt(e.target.value) || 14)}
+              className="input-shell w-full"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5 flex-1">
+            <label className="text-sm font-medium text-text-primary">
+              Line Height
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="3"
+              step="0.1"
+              value={lineHeight}
+              onChange={(e) => setLineHeight(parseFloat(e.target.value) || 1.5)}
+              className="input-shell w-full"
+            />
+          </div>
+        </div>
+
+        <ToggleRow
+          icon={<Type className="w-4 h-4 text-text-secondary" />}
+          label="Font Ligatures"
+          description="Enable programming ligatures (e.g. converting != to ≠)"
+          checked={enableLigatures}
+          onChange={(v) => setLigatures(v)}
+        />
+      </section>
+
+      <div className="h-px bg-borderMuted" />
+
+      {/* Placeholder for future themes */}
+      <section className="flex flex-col gap-4">
+        <h3 className="text-[11px] font-bold tracking-wider text-text-muted uppercase">
+          Theme Customisation
+        </h3>
+        <div className="flex flex-col items-center justify-center p-8 border border-dashed border-border rounded-lg bg-panel-raised/50">
+          <Palette className="w-8 h-8 text-text-muted opacity-40 mb-2" />
+          <p className="text-xs text-text-muted text-center max-w-xs">
+            Custom themes are coming soon. You'll be able to choose from built-in themes or create your own palette.
+          </p>
+        </div>
+      </section>
+    </div>
+  );
+};

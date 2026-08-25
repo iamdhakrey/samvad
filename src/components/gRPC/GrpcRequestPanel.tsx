@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { useVartaStore } from "../../store/vartaStore";
+import { useSettingsStore, DEFAULT_FONT_SETTINGS } from "../../store/settingStore";
 import { GrpcMetadataRow } from "../../types";
 
 type GrpcReqTab = "message" | "metadata";
@@ -24,6 +25,8 @@ export default function GrpcRequestPanel({ isMobile = false }: GrpcRequestPanelP
   const metadata = useVartaStore((s) => s.grpcMetadata);
   const setMetadata = useVartaStore((s) => s.setGrpcMetadata);
   const selectedMethod = useVartaStore((s) => s.grpcSelectedMethod);
+  const settingsFont = useSettingsStore((s) => s.settings?.font);
+  const { fontFamily, fontSize, enableLigatures, lineHeight } = settingsFont || DEFAULT_FONT_SETTINGS;
 
   return (
     <div className="flex h-full flex-col">
@@ -73,8 +76,10 @@ export default function GrpcRequestPanel({ isMobile = false }: GrpcRequestPanelP
                 theme="vs-dark"
                 options={{
                   minimap: { enabled: false },
-                  fontSize: 12.5,
-                  fontFamily: "'JetBrains Mono', ui-monospace, SFMono-Regular, monospace",
+                  fontSize: isMobile ? 12.5 : fontSize,
+                  fontFamily,
+                  fontLigatures: enableLigatures,
+                  lineHeight: lineHeight * (isMobile ? 12.5 : fontSize),
                   lineNumbers: "on",
                   scrollBeyondLastLine: false,
                   automaticLayout: true,

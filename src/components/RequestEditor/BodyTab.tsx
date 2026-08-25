@@ -3,6 +3,7 @@ import Editor from "@monaco-editor/react";
 import { Wand2, Upload, File as FileIcon, X } from "lucide-react";
 import KeyValueTable from "./KeyValueTable";
 import { BodyMode, RequestBody } from "@samvad-internal/models";
+import { useSettingsStore, DEFAULT_FONT_SETTINGS } from "../../store/settingStore";
 
 const MODES: { id: BodyMode; label: string }[] = [
   { id: "json", label: "JSON" },
@@ -28,6 +29,8 @@ interface Props {
 
 export default function BodyTab({ body, onChange, isMobile = false }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const settingsFont = useSettingsStore((s) => s.settings?.font);
+  const { fontFamily, fontSize, enableLigatures, lineHeight } = settingsFont || DEFAULT_FONT_SETTINGS;
 
   function setMode(mode: BodyMode) {
     onChange({ ...body, mode });
@@ -96,7 +99,10 @@ export default function BodyTab({ body, onChange, isMobile = false }: Props) {
             value={body.raw}
             onChange={(v) => onChange({ ...body, raw: v ?? "" })}
             options={{
-              fontSize: isMobile ? 12 : 13,
+              fontFamily,
+              fontSize: isMobile ? 12 : fontSize,
+              fontLigatures: enableLigatures,
+              lineHeight: lineHeight * (isMobile ? 12 : fontSize),
               minimap: { enabled: false },
               scrollBeyondLastLine: false,
               padding: { top: 12 },
