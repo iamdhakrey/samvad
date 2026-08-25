@@ -280,7 +280,6 @@ pub struct AdditionType {
     pub icon: String,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export, export_to = "models.ts")]
