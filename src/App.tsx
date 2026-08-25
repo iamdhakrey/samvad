@@ -6,6 +6,7 @@ import WebSocketPanel from "./components/WebSocketPanel";
 import CommandPalette from "./components/CommandPalette";
 import HistoryDrawer from "./components/HistoryDrawer";
 import { useVartaStore } from "./store/vartaStore";
+import { useSettingsStore, DEFAULT_FONT_SETTINGS } from "./store/settingStore";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useAuth0Desktop } from "./hooks/useAuth0Desktop";
 import { useResizablePanel } from "./hooks/useResizablePanel";
@@ -43,6 +44,23 @@ export default function App() {
       cleanup.then((fn) => fn());
     };
   }, [initWsListener]);
+
+  const initFonts = useSettingsStore(s => s.initFonts);
+  const settingsFont = useSettingsStore(s => s.settings?.font);
+  const font = settingsFont || DEFAULT_FONT_SETTINGS;
+
+  useEffect(() => {
+    initFonts();
+  }, [initFonts]);
+
+  useEffect(() => {
+    if (font.appFontFamily) {
+      document.documentElement.style.setProperty("--font-sans", font.appFontFamily);
+    }
+    if (font.fontFamily) {
+      document.documentElement.style.setProperty("--font-mono", font.fontFamily);
+    }
+  }, [font.appFontFamily, font.fontFamily]);
 
   return (
     <>

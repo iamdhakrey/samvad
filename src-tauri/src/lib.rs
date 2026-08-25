@@ -29,6 +29,7 @@ use crate::ws::{
 use crate::commands::auth::{self, PkceSessionState};
 use crate::commands::grpc;
 
+use crate::commands::fonts;
 use crate::commands::history::{clear_history, delete_history_entry, list_history};
 
 mod commands;
@@ -153,6 +154,8 @@ pub fn run() {
             grpc::grpc_invoke,
             grpc::grpc_cancel,
             grpc::grpc_send_message,
+            // fonts
+            fonts::get_system_fonts,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Samvad application");
