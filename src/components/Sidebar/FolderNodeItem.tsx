@@ -6,13 +6,12 @@ import {
   Folder,
   FolderOpen,
   Trash2,
-  FolderPlus,
-  FilePlus,
   Edit2,
   MoreHorizontal,
   Check,
   X,
 } from "lucide-react";
+import * as Icons from "lucide-react";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 
 export const FolderNodeItem: React.FC<{
@@ -35,7 +34,7 @@ export const FolderNodeItem: React.FC<{
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Make sure 'renameFolder' is exported from your store!
-  const { createFolder, createRequest, deleteFolder, renameFolder, createWs } =
+  const { createFolder, createRequest, deleteFolder, renameFolder, createWs, additionTypes } =
     useWorkspaceStore();
 
   // Handle click outside for the dropdown menu
@@ -171,50 +170,23 @@ export const FolderNodeItem: React.FC<{
                     onClick={(e) => e.stopPropagation()} // Prevent folder from toggling when clicking inside menu
                     className="absolute right-0 top-full mt-1 w-40 py-1 z-50 bg-panel-raised border border-border shadow-elevated rounded-md animate-in fade-in zoom-in-95 duration-100"
                   >
-                    <button
-                      onClick={() => {
-                        setAddingItem("request");
-                        setIsMenuOpen(false);
-                        setIsOpen(true);
-                      }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-colors cursor-pointer"
-                    >
-                      <FilePlus className="w-3.5 h-3.5" />
-                      Add Request
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAddingItem("ws");
-                        setIsMenuOpen(false);
-                        setIsOpen(true);
-                      }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-colors cursor-pointer"
-                    >
-                      <FilePlus className="w-3.5 h-3.5" />
-                      Add WebSocket
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAddingItem("folder");
-                        setIsMenuOpen(false);
-                        setIsOpen(true);
-                      }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-colors cursor-pointer"
-                    >
-                      <FolderPlus className="w-3.5 h-3.5" />
-                      Add Folder
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAddingItem("grpc");
-                        setIsMenuOpen(false);
-                        setIsOpen(true);
-                      }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-colors cursor-pointer"
-                    >
-                      <FolderPlus className="w-3.5 h-3.5" />
-                      Add GRPC
-                    </button>
+                    {additionTypes.map((type) => {
+                      const IconComp = (Icons as any)[type.icon] || Icons.FilePlus;
+                      return (
+                        <button
+                          key={type.id}
+                          onClick={() => {
+                            setAddingItem(type.id as any);
+                            setIsMenuOpen(false);
+                            setIsOpen(true);
+                          }}
+                          className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-colors cursor-pointer"
+                        >
+                          <IconComp className="w-3.5 h-3.5" />
+                          {type.label}
+                        </button>
+                      );
+                    })}
 
                     <div className="h-px bg-borderMuted my-1 mx-2" />
 

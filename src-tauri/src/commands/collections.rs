@@ -2,7 +2,33 @@ use samvad_error::AppResult;
 use tauri::State;
 
 use crate::state::AppState;
-use samvad_models::{ApiRequest, Collection, CollectionTree, Folder, RequestItem};
+use samvad_models::{AdditionType, ApiRequest, Collection, CollectionTree, Folder, RequestItem};
+
+#[tauri::command]
+pub async fn get_addition_types() -> AppResult<Vec<AdditionType>> {
+    Ok(vec![
+        AdditionType {
+            id: "request".into(),
+            label: "Add HTTP Request".into(),
+            icon: "FilePlus".into(),
+        },
+        AdditionType {
+            id: "ws".into(),
+            label: "Add WebSocket".into(),
+            icon: "FilePlus".into(),
+        },
+        AdditionType {
+            id: "grpc".into(),
+            label: "Add gRPC Request".into(),
+            icon: "FilePlus".into(),
+        },
+        AdditionType {
+            id: "folder".into(),
+            label: "Add Folder".into(),
+            icon: "FolderPlus".into(),
+        },
+    ])
+}
 
 #[tauri::command]
 pub async fn list_collections(
