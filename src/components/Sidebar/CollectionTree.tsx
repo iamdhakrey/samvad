@@ -6,12 +6,11 @@ import {
   Edit2,
   Check,
   X,
-  FolderPlus,
-  FilePlus,
   ChevronDown,
   Loader2,
   Folder,
 } from "lucide-react";
+import * as Icons from "lucide-react";
 import { FolderNodeItem } from "./FolderNodeItem";
 import { RequestItem } from "./RequestItem";
 import { useWorkspaceStore } from "../../store/workspaceStore";
@@ -32,6 +31,8 @@ export const CollectionsTree: React.FC = () => {
     createRequest,
     createFolder,
     createWs,
+    additionTypes,
+    fetchAdditionTypes,
   } = useWorkspaceStore();
 
   // Dropdown states for Collection Selector
@@ -60,6 +61,11 @@ export const CollectionsTree: React.FC = () => {
       fetchCollections();
     }
   }, [activeWorkspaceId, fetchCollections]);
+
+  // Fetch addition types on mount
+  useEffect(() => {
+    fetchAdditionTypes();
+  }, [fetchAdditionTypes]);
 
   // Click-outside listener for Collection Selector dropdown
   useEffect(() => {
@@ -127,23 +133,6 @@ export const CollectionsTree: React.FC = () => {
 
   return (
     <div className="mt-2 flex-1 overflow-y-auto flex flex-col">
-      {/* ── Header: Section Title + Add Collection ── */}
-      <div className="flex items-center justify-between px-3 mb-1.5 group">
-        <div className="text-[11px] font-semibold tracking-wider text-text-muted">
-          COLLECTIONS
-        </div>
-        <button
-          onClick={() => {
-            setIsDropdownOpen(true);
-            setIsCreatingCollection(true);
-            setNewCollectionName("");
-          }}
-          className="opacity-70 group-hover:opacity-100 p-1 rounded text-text-muted hover:text-text-primary hover:bg-panel transition-all cursor-pointer"
-          title="New Collection"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      </div>
 
       {/* ── Collection Selector Dropdown ── */}
       <div className="relative px-3 mb-2" ref={dropdownRef}>
@@ -165,9 +154,8 @@ export const CollectionsTree: React.FC = () => {
             )}
           </div>
           <ChevronDown
-            className={`w-3.5 h-3.5 text-text-secondary transition-transform duration-200 shrink-0 ${
-              isDropdownOpen ? "rotate-180" : ""
-            }`}
+            className={`w-3.5 h-3.5 text-text-secondary transition-transform duration-200 shrink-0 ${isDropdownOpen ? "rotate-180" : ""
+              }`}
           />
         </button>
 
@@ -184,11 +172,10 @@ export const CollectionsTree: React.FC = () => {
                 collections.map((col) => (
                   <div
                     key={col.id}
-                    className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${
-                      col.id === activeCollectionId
-                        ? "bg-panel/50 text-text-primary font-medium"
-                        : ""
-                    }`}
+                    className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${col.id === activeCollectionId
+                      ? "bg-panel/50 text-text-primary font-medium"
+                      : ""
+                      }`}
                   >
                     {editingCollectionId === col.id ? (
                       // Inline Rename Form
@@ -363,58 +350,25 @@ export const CollectionsTree: React.FC = () => {
 
                 {activeMenuOpen && (
                   <div className="absolute right-0 top-full mt-1 w-38 py-1 z-50 bg-panel-raised border border-border shadow-elevated rounded-md animate-in fade-in zoom-in-95 duration-100">
-                    <button
-                      onClick={() => {
-                        setAddingItem({
-                          collectionId: activeCollectionTree.collection.id,
-                          type: "request",
-                        });
-                        setActiveMenuOpen(false);
-                      }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-colors cursor-pointer"
-                    >
-                      <FilePlus className="w-3.5 h-3.5" />
-                      Add HTTP Request
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAddingItem({
-                          collectionId: activeCollectionTree.collection.id,
-                          type: "ws",
-                        });
-                        setActiveMenuOpen(false);
-                      }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-colors cursor-pointer"
-                    >
-                      <FilePlus className="w-3.5 h-3.5" />
-                      Add WebSocket
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAddingItem({
-                          collectionId: activeCollectionTree.collection.id,
-                          type: "grpc",
-                        });
-                        setActiveMenuOpen(false);
-                      }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-colors cursor-pointer"
-                    >
-                      <FilePlus className="w-3.5 h-3.5" />
-                      Add gRPC Request
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAddingItem({
-                          collectionId: activeCollectionTree.collection.id,
-                          type: "folder",
-                        });
-                        setActiveMenuOpen(false);
-                      }}
-                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-colors cursor-pointer"
-                    >
-                      <FolderPlus className="w-3.5 h-3.5" />
-                      Add Folder
-                    </button>
+                    {additionTypes.map((type) => {
+                      const IconComp = (Icons as any)[type.icon] || Icons.FilePlus;
+                      return (
+                        <button
+                          key={type.id}
+                          onClick={() => {
+                            setAddingItem({
+                              collectionId: activeCollectionTree.collection.id,
+                              type: type.id as any,
+                            });
+                            setActiveMenuOpen(false);
+                          }}
+                          className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-colors cursor-pointer"
+                        >
+                          <IconComp className="w-3.5 h-3.5" />
+                          {type.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

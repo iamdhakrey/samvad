@@ -6,9 +6,9 @@ use tokio::sync::Mutex;
 
 use crate::commands::collections::{
     clone_collection, create_collection, create_folder, create_request, create_ws_request,
-    delete_collection, delete_folder, delete_request, duplicate_request, get_collection_tree,
-    get_collection_trees, get_request, list_collections, rename_collection, rename_folder,
-    rename_request, save_request, set_active_collection,
+    delete_collection, delete_folder, delete_request, duplicate_request, get_addition_types,
+    get_collection_tree, get_collection_trees, get_request, list_collections, rename_collection,
+    rename_folder, rename_request, save_request, set_active_collection,
 };
 use crate::commands::environments::{
     create_environment, delete_environment, list_environments, list_variables, rename_environment,
@@ -96,6 +96,7 @@ pub fn run() {
             get_active_state,
             get_active_state_full,
             //  Collection commands
+            get_addition_types,
             list_collections,
             get_collection_tree,
             get_collection_trees,

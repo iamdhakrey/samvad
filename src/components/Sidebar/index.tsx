@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { Search, Plus, Upload, Settings, X } from "lucide-react";
+import { Search, Settings, X } from "lucide-react";
 import { WorkspaceSelector } from "./WorkspaceSelector";
 import { CollectionsTree } from "./CollectionTree";
 import { EnvironmentSelector } from "./EnvironmentSelector";
 import { useWorkspaceStore } from "../../store/workspaceStore";
-import { useVartaStore } from "../../store/vartaStore";
 import { useSettingsStore } from "../../store/settingStore";
 
 interface SidebarProps {
@@ -17,7 +16,6 @@ export default function Sidebar({ isMobile, onClose }: SidebarProps) {
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const fetchEnvironments = useWorkspaceStore((s) => s.fetchEnvironments);
 
-  const newTab = useVartaStore((s) => s.newTab);
   const setSettingsOpen = useSettingsStore((s) => s.setSettingsOpen);
 
   // Fetch environments when the active workspace changes
@@ -27,11 +25,6 @@ export default function Sidebar({ isMobile, onClose }: SidebarProps) {
     }
   }, [activeWorkspaceId, fetchEnvironments]);
 
-  const handleNewTab = () => {
-    newTab();
-    if (isMobile && onClose) onClose();
-  };
-
   const handleSettings = () => {
     setSettingsOpen(true);
     if (isMobile && onClose) onClose();
@@ -39,9 +32,8 @@ export default function Sidebar({ isMobile, onClose }: SidebarProps) {
 
   return (
     <aside
-      className={`flex h-full shrink-0 flex-col border-r border-border bg-bg ${
-        isMobile ? "w-[85vw] max-w-[320px]" : "w-70"
-      }`}
+      className={`flex h-full shrink-0 flex-col border-r border-border bg-bg ${isMobile ? "w-[85vw] max-w-[320px]" : "w-70"
+        }`}
     >
       {/* Mobile close header */}
       {isMobile && (
@@ -86,18 +78,6 @@ export default function Sidebar({ isMobile, onClose }: SidebarProps) {
       <div className="border-t border-border p-3">
         {/* <-- Custom Dropdown replaces native select --> */}
         <EnvironmentSelector />
-
-        <button
-          onClick={handleNewTab}
-          className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-md bg-primary py-1.5 text-sm font-medium text-white hover:bg-primary-hover transition-colors cursor-pointer"
-        >
-          <Plus size={14} />
-          New request
-        </button>
-        <button className="flex w-full items-center justify-center gap-1.5 rounded-md border border-border py-1.5 text-sm text-text-secondary hover:bg-panel-raised transition-colors cursor-pointer">
-          <Upload size={14} />
-          Import collection
-        </button>
       </div>
 
       {/* FOOTER - Stacked Buttons */}

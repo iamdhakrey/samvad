@@ -6,6 +6,7 @@ import {
   CollectionTree,
   EnvironmentVariable,
   EnvironmentWithVariables,
+  AdditionType,
 } from "@samvad-internal/models";
 
 export interface WorkspaceStore {
@@ -21,6 +22,9 @@ export interface WorkspaceStore {
   isLoadingCollections: boolean;
   isLoadingCollectionTree: boolean;
   error: string | null;
+
+  additionTypes: AdditionType[];
+  fetchAdditionTypes: () => Promise<void>;
 
   fetchWorkspaces: () => Promise<void>;
   createWorkspace: (name: string) => Promise<void>;
@@ -90,6 +94,16 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   error: null,
   activeEnvironmentId: null,
   environments: [],
+
+  additionTypes: [],
+  fetchAdditionTypes: async () => {
+    try {
+      const types = await invoke<AdditionType[]>("get_addition_types");
+      set({ additionTypes: types });
+    } catch (err) {
+      console.error("Failed to load addition types:", err);
+    }
+  },
 
   fetchWorkspaces: async () => {
     set({ isLoading: true, error: null });

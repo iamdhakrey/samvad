@@ -274,6 +274,16 @@ pub struct ApiResponse {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export, export_to = "models.ts")]
+pub struct AdditionType {
+    pub id: String,
+    pub label: String,
+    pub icon: String,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct Workspace {
     pub id: String,
     pub name: String,
