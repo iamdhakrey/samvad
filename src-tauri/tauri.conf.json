@@ -14,9 +14,11 @@
     "windows": [
       {
         "title": "Samvad",
-        "width": 800,
-        "height": 600,
-        "decorations": false,
+        "width": 1200,
+        "height": 800,
+        "decorations": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
         "transparent": true
       }
     ],
@@ -45,7 +47,9 @@
     },
     "deep-link": {
       "desktop": {
-        "schemes": ["samvad"]
+        "schemes": [
+          "samvad"
+        ]
       }
     }
   }
