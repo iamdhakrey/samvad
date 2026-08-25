@@ -7,10 +7,26 @@ use samvad_models::{AdditionType, ApiRequest, Collection, CollectionTree, Folder
 #[tauri::command]
 pub async fn get_addition_types() -> AppResult<Vec<AdditionType>> {
     Ok(vec![
-        AdditionType { id: "request".into(), label: "Add HTTP Request".into(), icon: "FilePlus".into() },
-        AdditionType { id: "ws".into(), label: "Add WebSocket".into(), icon: "FilePlus".into() },
-        AdditionType { id: "grpc".into(), label: "Add gRPC Request".into(), icon: "FilePlus".into() },
-        AdditionType { id: "folder".into(), label: "Add Folder".into(), icon: "FolderPlus".into() },
+        AdditionType {
+            id: "request".into(),
+            label: "Add HTTP Request".into(),
+            icon: "FilePlus".into(),
+        },
+        AdditionType {
+            id: "ws".into(),
+            label: "Add WebSocket".into(),
+            icon: "FilePlus".into(),
+        },
+        AdditionType {
+            id: "grpc".into(),
+            label: "Add gRPC Request".into(),
+            icon: "FilePlus".into(),
+        },
+        AdditionType {
+            id: "folder".into(),
+            label: "Add Folder".into(),
+            icon: "FolderPlus".into(),
+        },
     ])
 }
 
