@@ -147,6 +147,7 @@ pub fn run() {
             auth::auth_logout,
             // gRPC
             grpc::grpc_reflect,
+            grpc::grpc_parse_proto,
             grpc::grpc_invoke,
             grpc::grpc_cancel,
             grpc::grpc_send_message,
