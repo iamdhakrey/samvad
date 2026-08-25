@@ -5,6 +5,23 @@ use crate::state::AppState;
 use samvad_models::{ApiRequest, Collection, CollectionTree, Folder, RequestItem};
 
 #[tauri::command]
+pub async fn list_collections(
+    state: State<'_, AppState>,
+    workspaceid: String,
+) -> AppResult<Vec<Collection>> {
+    crate::db::collections::list_collections(&state.data_dir, &workspaceid)
+}
+
+#[tauri::command]
+pub async fn get_collection_tree(
+    state: State<'_, AppState>,
+    workspaceid: String,
+    collectionid: String,
+) -> AppResult<CollectionTree> {
+    crate::db::collections::get_collection_tree(&state.data_dir, &workspaceid, &collectionid)
+}
+
+#[tauri::command]
 pub async fn get_collection_trees(
     state: State<'_, AppState>,
     workspaceid: String,

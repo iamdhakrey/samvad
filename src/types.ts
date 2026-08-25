@@ -1,6 +1,7 @@
 import {
   ApiRequest,
   ApiResponse,
+  Collection,
   CollectionTree,
   EnvironmentVariable,
   EnvironmentWithVariables,
@@ -8,6 +9,8 @@ import {
   UploadedFile,
   WsSavedMessage,
 } from "@samvad-internal/models";
+
+export type { Collection };
 
 export type AuthType = "none" | "basic" | "bearer" | "apiKey";
 
@@ -26,12 +29,6 @@ export interface CollectionFolder {
   id: string;
   name: string;
   requests: ApiRequest[];
-}
-
-export interface Collection {
-  id: string;
-  name: string;
-  folders: CollectionFolder[];
 }
 
 // ── WebSocket types ──────────────────────────────────────────────────
@@ -84,21 +81,18 @@ export interface FolderNode {
   requests: ApiRequest[];
 }
 
-export interface Collection {
-  id: string;
-  workspace_id: string;
-  name: string;
-  sort_order: number;
-}
-
 export interface WorkspaceStore {
   environments: EnvironmentWithVariables[];
   workspaces: Workspace[];
-  collectionTrees: CollectionTree[];
+  collections: Collection[];
   activeWorkspaceId: string | null;
+  activeCollectionId: string | null;
+  activeCollectionTree: CollectionTree | null;
+  collectionTrees: CollectionTree[];
   activeEnvironmentId: string | null;
   isLoading: boolean;
   isLoadingCollections: boolean;
+  isLoadingCollectionTree: boolean;
   error: string | null;
 
   fetchWorkspaces: () => Promise<void>;
@@ -110,12 +104,12 @@ export interface WorkspaceStore {
 
   // Collections
   fetchCollections: () => Promise<void>;
+  fetchCollectionTree: (collectionId: string) => Promise<void>;
+  setActiveCollection: (id: string | null) => Promise<void>;
   createCollection: (name: string) => Promise<void>;
   renameCollection: (id: string, name: string) => Promise<void>;
   deleteCollection: (id: string) => Promise<void>;
   cloneCollection: (id: string, newName: string) => Promise<void>;
-  // addRequestToCollection: (collectionId: string, request: ApiRequest) => Promise<void>;
-  // removeRequestFromCollection: (collectionId: string, requestId: string) => Promise<void>;
 
   // Folders
   createFolder: (
@@ -135,13 +129,13 @@ export interface WorkspaceStore {
     collectionId: string,
     folderId: string | null,
     name: string,
+    type: "WS" | "REST" | "GRPC",
   ) => Promise<void>;
   createWs: (
     collectionId: string,
     folderId: string | null,
     name: string,
   ) => Promise<void>;
-  // updateRequest: (requestId: string, updatedRequest: Partial<ApiRequest>) => Promise<void>;
   deleteRequest: (requestId: string) => Promise<void>;
   renameRequest: (id: string, name: string) => Promise<void>;
 

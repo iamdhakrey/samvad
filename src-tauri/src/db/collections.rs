@@ -117,6 +117,64 @@ fn load_folders_for_collection(
 // Public API — collection trees
 // ---------------------------------------------------------------------------
 
+/// Returns all collections in a workspace (metadata only, no folders/requests loaded).
+pub fn list_collections(dd: &DataDir, workspace_id: &str) -> AppResult<Vec<Collection>> {
+    let cols_dir = dd.collections_dir(workspace_id);
+    if !cols_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    let mut collections: Vec<Collection> = Vec::new();
+    for entry in std::fs::read_dir(&cols_dir)? {
+        let entry = entry?;
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+        let col_id = entry.file_name().to_string_lossy().to_string();
+        let meta_path = dd.collection_meta_path(workspace_id, &col_id);
+        if meta_path.exists() {
+            let col: Collection = read_yaml(&meta_path)?;
+            collections.push(col);
+        }
+    }
+
+    collections.sort_by_key(|c| c.sort_order);
+    Ok(collections)
+}
+
+/// Returns a single collection as a fully assembled tree (folders and requests loaded).
+pub fn get_collection_tree(
+    dd: &DataDir,
+    workspace_id: &str,
+    collection_id: &str,
+) -> AppResult<CollectionTree> {
+    let meta_path = dd.collection_meta_path(workspace_id, collection_id);
+    if !meta_path.exists() {
+        return Err(AppError::NotFound(format!("collection '{collection_id}'")));
+    }
+    let collection: Collection = read_yaml(&meta_path)?;
+
+    let folders = load_folders_for_collection(dd, workspace_id, collection_id)?;
+    let all_requests = load_requests_for_collection(dd, workspace_id, collection_id)?;
+
+    let mut requests_by_folder: HashMap<Option<String>, Vec<RequestItem>> = HashMap::new();
+    for req in all_requests {
+        requests_by_folder
+            .entry(req.folder_id().map(String::from))
+            .or_default()
+            .push(req);
+    }
+
+    let folder_nodes = build_folder_tree(&folders, None, &mut requests_by_folder);
+    let root_requests = requests_by_folder.remove(&None).unwrap_or_default();
+
+    Ok(CollectionTree {
+        collection,
+        folders: folder_nodes,
+        requests: root_requests,
+    })
+}
+
 /// Returns every collection in a workspace as a fully assembled tree
 /// (folders nested under folders, requests nested under both), ready for
 /// the sidebar to render in one pass.
