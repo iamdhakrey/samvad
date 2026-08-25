@@ -101,9 +101,8 @@ export default function GrpcResponsePanel({
     <div className="flex h-full flex-col">
       {/* Status bar */}
       <div
-        className={`flex items-center gap-3 border-b border-border bg-panel text-sm ${
-          isMobile ? "px-3 py-2" : "px-4 py-2"
-        }`}
+        className={`flex items-center gap-3 border-b border-border bg-panel text-sm ${isMobile ? "px-3 py-2" : "px-4 py-2"
+          }`}
       >
         {/* Status indicator */}
         <div className="flex items-center gap-2">
@@ -148,9 +147,8 @@ export default function GrpcResponsePanel({
 
       {/* Messages tab header */}
       <div
-        className={`flex gap-1 border-b border-border ${
-          isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
-        }`}
+        className={`flex gap-1 border-b border-border ${isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
+          }`}
       >
         <button className="tab-trigger shrink-0 tab-trigger-active">
           Messages
@@ -164,9 +162,8 @@ export default function GrpcResponsePanel({
 
       {/* Message log */}
       <div
-        className={`flex-1 overflow-y-auto ${
-          isMobile ? "px-3 py-2" : "px-4 py-3"
-        }`}
+        className={`flex-1 overflow-y-auto ${isMobile ? "px-3 py-2" : "px-4 py-3"
+          }`}
       >
         {messages.length === 0 ? (
           <EmptyState callStatus={callStatus} />
@@ -243,13 +240,12 @@ function MessageRow({
 
   return (
     <div
-      className={`group flex gap-2 rounded-md border px-3 py-2 text-sm font-mono transition-colors ${
-        isSent
-          ? "border-primary/20 bg-primary/5"
-          : msg.isError
-            ? "border-error/20 bg-error/5"
-            : "border-success/20 bg-success/5"
-      }`}
+      className={`group flex gap-2 rounded-md border px-3 py-2 text-sm font-mono transition-colors ${isSent
+        ? "border-primary/20 bg-primary/5"
+        : msg.isError
+          ? "border-error/20 bg-error/5"
+          : "border-success/20 bg-success/5"
+        }`}
     >
       {/* Direction icon */}
       <div className="shrink-0 pt-0.5">
@@ -268,11 +264,10 @@ function MessageRow({
         {msg.statusCode && (
           <div className="mb-1">
             <span
-              className={`inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${
-                msg.statusCode === "OK"
-                  ? "bg-success/20 text-success"
-                  : "bg-error/20 text-error"
-              }`}
+              className={`inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${msg.statusCode === "OK"
+                ? "bg-success/20 text-success"
+                : "bg-error/20 text-error"
+                }`}
             >
               {msg.statusCode}
             </span>
@@ -302,9 +297,8 @@ function MessageRow({
         {/* Copy button — visible on hover */}
         <button
           onClick={handleCopy}
-          className={`rounded p-0.5 text-text-muted hover:text-text-primary hover:bg-panel-raised transition-colors ${
-            isMobile ? "" : "opacity-0 group-hover:opacity-100"
-          }`}
+          className={`rounded p-0.5 text-text-muted hover:text-text-primary hover:bg-panel-raised transition-colors ${isMobile ? "" : "opacity-0 group-hover:opacity-100"
+            }`}
           title="Copy message"
         >
           <Copy size={11} />

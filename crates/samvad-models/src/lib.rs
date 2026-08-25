@@ -414,6 +414,31 @@ pub struct HistoryEntry {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export, export_to = "models.ts")]
+pub struct FontSettings {
+    pub app_font_family: String,
+    pub font_family: String,
+    pub custom_font_path: Option<String>,
+    pub font_size: u32,
+    pub line_height: f32,
+    pub enable_ligatures: bool,
+}
+
+impl Default for FontSettings {
+    fn default() -> Self {
+        Self {
+            app_font_family: "Inter".to_string(),
+            font_family: "Fira Code, monospace".to_string(),
+            custom_font_path: None,
+            font_size: 14,
+            line_height: 1.5,
+            enable_ligatures: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
 pub struct AppSettings {
     pub follow_redirects: bool,
     pub max_redirects: u32,
@@ -426,6 +451,8 @@ pub struct AppSettings {
     pub timeout_ms: u64,
     pub user_agent: String,
     pub proxy_url: Option<String>,
+    #[serde(default)]
+    pub font: FontSettings,
 }
 
 impl Default for AppSettings {
@@ -437,6 +464,7 @@ impl Default for AppSettings {
             timeout_ms: 30_000,
             user_agent: format!("Samvad/{}", env!("CARGO_PKG_VERSION")),
             proxy_url: None,
+            font: FontSettings::default(),
         }
     }
 }

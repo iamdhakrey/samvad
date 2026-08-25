@@ -59,7 +59,7 @@ function RequestPanel({
   }, [saveActiveRequest]);
 
   if (tab.request.type === "grpc") {
-    return;
+    return null;
   }
   return (
     <div className="flex h-full flex-col">

@@ -215,10 +215,10 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       const updatedTabs = s.tabs.map((t) =>
         t.id === s.activeTabId
           ? {
-              ...t,
-              isDirty: true,
-              request: { ...t.request, ...patch } as RequestItem,
-            }
+            ...t,
+            isDirty: true,
+            request: { ...t.request, ...patch } as RequestItem,
+          }
           : t,
       );
 
@@ -269,11 +269,11 @@ export const useVartaStore = create<VartaState>((set, get) => ({
           tabs: s.tabs.map((t) =>
             t.id === activeTabId
               ? {
-                  ...t,
-                  isSending: false,
-                  response: undefined,
-                  error: errorMessage,
-                }
+                ...t,
+                isSending: false,
+                response: undefined,
+                error: errorMessage,
+              }
               : t,
           ),
         }));
@@ -314,7 +314,13 @@ export const useVartaStore = create<VartaState>((set, get) => ({
           t.id === state.activeTabId ? { ...t, isDirty: false } : t,
         ),
       }));
-      useWorkspaceStore.getState().fetchCollections();
+      // Refresh the specific collection tree or collection list
+      const targetColId = activeTab.request.collectionId;
+      if (targetColId) {
+        useWorkspaceStore.getState().fetchCollectionTree(targetColId);
+      } else {
+        useWorkspaceStore.getState().fetchCollections();
+      }
     } catch (error) {
       console.error("Failed to save request:", error);
       // Handle error toast here
@@ -335,11 +341,11 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       tabs: s.tabs.map((t) =>
         t.id === activeTabId
           ? {
-              ...t,
-              wsStatus: "connecting" as const,
-              wsMessages: [],
-              wsGqlSubscriptionIds: [],
-            }
+            ...t,
+            wsStatus: "connecting" as const,
+            wsMessages: [],
+            wsGqlSubscriptionIds: [],
+          }
           : t,
       ),
     }));
@@ -369,10 +375,10 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         tabs: s.tabs.map((t) =>
           t.id === activeTabId
             ? {
-                ...t,
-                wsConnectionId: connectionId,
-                wsStatus: "connected" as const,
-              }
+              ...t,
+              wsConnectionId: connectionId,
+              wsStatus: "connected" as const,
+            }
             : t,
         ),
       }));
@@ -411,10 +417,10 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       tabs: s.tabs.map((t) =>
         t.id === activeTabId
           ? {
-              ...t,
-              wsConnectionId: undefined,
-              wsStatus: "disconnected" as const,
-            }
+            ...t,
+            wsConnectionId: undefined,
+            wsStatus: "disconnected" as const,
+          }
           : t,
       ),
     }));
@@ -437,9 +443,9 @@ export const useVartaStore = create<VartaState>((set, get) => ({
           tabs: s.tabs.map((t) =>
             t.id === activeTabId
               ? {
-                  ...t,
-                  wsGqlSubscriptionIds: [...t.wsGqlSubscriptionIds, subId],
-                }
+                ...t,
+                wsGqlSubscriptionIds: [...t.wsGqlSubscriptionIds, subId],
+              }
               : t,
           ),
         }));
@@ -538,11 +544,11 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         tabs: s.tabs.map((t) =>
           t.request.id === requestId
             ? {
-                ...t,
-                wsSavedMessages: t.wsSavedMessages.filter(
-                  (m) => m.id !== messageId,
-                ),
-              }
+              ...t,
+              wsSavedMessages: t.wsSavedMessages.filter(
+                (m) => m.id !== messageId,
+              ),
+            }
             : t,
         ),
       }));
@@ -565,10 +571,10 @@ export const useVartaStore = create<VartaState>((set, get) => ({
           tabs: s.tabs.map((t) =>
             t.wsConnectionId === event.payload.connectionId
               ? {
-                  ...t,
-                  wsConnectionId: undefined,
-                  wsStatus: "disconnected" as const,
-                }
+                ...t,
+                wsConnectionId: undefined,
+                wsStatus: "disconnected" as const,
+              }
               : t,
           ),
         }));
@@ -652,6 +658,14 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       grpcLastLatencyMs: null,
     });
 
+    // Map the local stream type to the Rust GrpcMethodType enum
+    const streamToMethodType: Record<string, string> = {
+      unary: "Unary",
+      server_stream: "ServerStreaming",
+      client_stream: "ClientStreaming",
+      bidi_stream: "BidirectionalStreaming",
+    };
+
     try {
       const request = {
         id: "temp-id",
@@ -661,9 +675,9 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         url: activeTab.request.url,
         service: grpcSelectedService.fullName,
         method: grpcSelectedMethod.name,
-        methodType: "Unary",
+        methodType: streamToMethodType[grpcSelectedMethod.streamType] || "Unary",
         metadata: grpcMetadata,
-        auth: { type: "none" },
+        auth: { type: "none", basic: null, bearer: null, apiKey: null },
         message: grpcRequestBody,
         useReflection: true,
         protoFileIds: [],
@@ -672,14 +686,16 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       const response = await invoke<any>("grpc_invoke", { request });
 
       set({
-        grpcCallStatus: "idle",
-        grpcLastLatencyMs: response.timeMs,
+        grpcCallStatus: "ok",
+        grpcLastLatencyMs: Number(response.timeMs),
         grpcMessages: [
           {
-            id: response.id,
+            id: crypto.randomUUID(),
             direction: "received",
             data: response.message,
             timestamp: new Date().toISOString(),
+            statusCode: response.statusText || "OK",
+            latencyMs: Number(response.timeMs),
           },
         ],
       });
@@ -689,14 +705,16 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         grpcCallStatus: "error",
         grpcMessages: [
           {
-            id: "1",
+            id: crypto.randomUUID(),
             direction: "received",
-            data: `Error: ${e}`,
+            data: typeof e === "string" ? e : JSON.stringify(e, null, 2),
             timestamp: new Date().toISOString(),
             isError: true,
+            statusCode: "ERROR",
           },
         ],
       });
+      console.log("gprrc mes", get().grpcMessages)
     }
   },
 
@@ -718,7 +736,7 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       const services = await invoke<GrpcService[]>("grpc_reflect", {
         address: grpcServerAddress,
       });
-      set({ grpcServices: services });
+      set({ grpcServices: services, grpcCallStatus: "idle", grpcMessages: [] });
     } catch (e: any) {
       console.error("[gRPC] loadGrpcReflection error:", e);
       // set({ grpcReflectionLoading: false, activeTab?.error: e });
@@ -726,13 +744,24 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         tabs: s.tabs.map((t) =>
           t.id === activeTabId
             ? {
-                ...t,
-                isSending: false,
-                response: undefined,
-                error: e,
-              }
+              ...t,
+              isSending: false,
+              response: undefined,
+              error: e,
+            }
             : t,
         ),
+        grpcCallStatus: "error",
+        grpcMessages: [
+          {
+            id: crypto.randomUUID(),
+            direction: "received",
+            data: typeof e === "string" ? e : JSON.stringify(e, null, 2),
+            timestamp: new Date().toISOString(),
+            isError: true,
+            statusCode: "ERROR",
+          },
+        ],
       }));
 
       // Optional: Maybe show an error toast

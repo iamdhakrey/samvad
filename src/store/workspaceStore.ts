@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { Workspace } from "../types";
 import {
+  Collection,
   CollectionTree,
   EnvironmentVariable,
   EnvironmentWithVariables,
@@ -10,11 +11,15 @@ import {
 export interface WorkspaceStore {
   environments: EnvironmentWithVariables[];
   workspaces: Workspace[];
-  collectionTrees: CollectionTree[];
+  collections: Collection[];
   activeWorkspaceId: string | null;
+  activeCollectionId: string | null;
+  activeCollectionTree: CollectionTree | null;
+  collectionTrees: CollectionTree[];
   activeEnvironmentId: string | null;
   isLoading: boolean;
   isLoadingCollections: boolean;
+  isLoadingCollectionTree: boolean;
   error: string | null;
 
   fetchWorkspaces: () => Promise<void>;
@@ -26,12 +31,12 @@ export interface WorkspaceStore {
 
   // Collections
   fetchCollections: () => Promise<void>;
+  fetchCollectionTree: (collectionId: string) => Promise<void>;
+  setActiveCollection: (id: string | null) => Promise<void>;
   createCollection: (name: string) => Promise<void>;
   renameCollection: (id: string, name: string) => Promise<void>;
   deleteCollection: (id: string) => Promise<void>;
   cloneCollection: (id: string, newName: string) => Promise<void>;
-  // addRequestToCollection: (collectionId: string, request: ApiRequest) => Promise<void>;
-  // removeRequestFromCollection: (collectionId: string, requestId: string) => Promise<void>;
 
   // Folders
   createFolder: (
@@ -58,7 +63,6 @@ export interface WorkspaceStore {
     folderId: string | null,
     name: string,
   ) => Promise<void>;
-  // updateRequest: (requestId: string, updatedRequest: Partial<ApiRequest>) => Promise<void>;
   deleteRequest: (requestId: string) => Promise<void>;
   renameRequest: (id: string, name: string) => Promise<void>;
 
@@ -75,10 +79,14 @@ export interface WorkspaceStore {
 
 export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   workspaces: [],
+  collections: [],
   collectionTrees: [],
+  activeCollectionTree: null,
   activeWorkspaceId: null,
+  activeCollectionId: null,
   isLoading: false,
   isLoadingCollections: false,
+  isLoadingCollectionTree: false,
   error: null,
   activeEnvironmentId: null,
   environments: [],
@@ -153,7 +161,14 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
       // Sync structural fallbacks down to backend
       const currentActive = get().activeWorkspaceId;
       if (currentActive) {
-        await invoke("set_active_workspace", { id: currentActive });
+        await get().setActiveWorkspace(currentActive);
+      } else {
+        set({
+          collections: [],
+          activeCollectionId: null,
+          activeCollectionTree: null,
+          collectionTrees: [],
+        });
       }
     } catch (err) {
       set({ error: String(err), isLoading: false });
@@ -163,7 +178,14 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   setActiveWorkspace: async (id: string) => {
     try {
       await invoke("set_active_workspace", { id });
-      set({ activeWorkspaceId: id });
+      set({
+        activeWorkspaceId: id,
+        activeCollectionId: null,
+        activeCollectionTree: null,
+        collectionTrees: [],
+        collections: [],
+      });
+      await get().fetchCollections();
     } catch (err) {
       set({ error: String(err) });
     }
@@ -171,16 +193,19 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
 
   getActiveState: async () => {
     try {
-      // Use get_active_state_full to restore both workspace and environment
       const fullState = await invoke<{
         activeWorkspaceId?: string;
         activeEnvironmentId?: string;
+        activeCollectionId?: string;
       }>("get_active_state_full");
       if (fullState.activeWorkspaceId) {
         set({ activeWorkspaceId: fullState.activeWorkspaceId });
       }
       if (fullState.activeEnvironmentId) {
         set({ activeEnvironmentId: fullState.activeEnvironmentId });
+      }
+      if (fullState.activeCollectionId) {
+        set({ activeCollectionId: fullState.activeCollectionId });
       }
       console.log("Restored active state:", fullState);
     } catch (err) {
@@ -190,26 +215,82 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
 
   // Collections
   fetchCollections: async () => {
-    const { activeWorkspaceId } = get();
+    const { activeWorkspaceId, activeCollectionId } = get();
     if (!activeWorkspaceId) return;
     set({ isLoadingCollections: true });
 
     try {
-      const collections = await invoke<CollectionTree[]>(
-        "get_collection_trees",
-        {
-          workspaceid: activeWorkspaceId,
-        },
-      );
-      console.log("Fetched collections:", collections);
-      if (!collections) {
-        set({ error: "No collections found", isLoadingCollections: false });
-        return;
+      const collections = await invoke<Collection[]>("list_collections", {
+        workspaceid: activeWorkspaceId,
+      });
+      console.log("Fetched collections list:", collections);
+
+      // Determine which collection should be active
+      let targetCollectionId = activeCollectionId;
+      if (
+        !targetCollectionId ||
+        !collections.some((c) => c.id === targetCollectionId)
+      ) {
+        targetCollectionId = collections.length > 0 ? collections[0].id : null;
       }
-      set({ collectionTrees: collections, isLoadingCollections: false });
+
+      set({
+        collections: collections || [],
+        activeCollectionId: targetCollectionId,
+        isLoadingCollections: false,
+      });
+
+      if (targetCollectionId) {
+        await get().fetchCollectionTree(targetCollectionId);
+        await invoke("set_active_collection", {
+          collectionid: targetCollectionId,
+        });
+      } else {
+        set({
+          activeCollectionTree: null,
+          collectionTrees: [],
+        });
+        await invoke("set_active_collection", { collectionid: null });
+      }
     } catch (err) {
       console.error("Error fetching collections:", err);
       set({ error: String(err), isLoadingCollections: false });
+    }
+  },
+
+  fetchCollectionTree: async (collectionId: string) => {
+    const { activeWorkspaceId } = get();
+    if (!activeWorkspaceId || !collectionId) return;
+    set({ isLoadingCollectionTree: true });
+
+    try {
+      const tree = await invoke<CollectionTree>("get_collection_tree", {
+        workspaceid: activeWorkspaceId,
+        collectionid: collectionId,
+      });
+      console.log("Fetched collection tree:", tree);
+      set({
+        activeCollectionTree: tree,
+        collectionTrees: tree ? [tree] : [],
+        isLoadingCollectionTree: false,
+      });
+    } catch (err) {
+      console.error("Error fetching collection tree:", err);
+      set({ error: String(err), isLoadingCollectionTree: false });
+    }
+  },
+
+  setActiveCollection: async (id: string | null) => {
+    set({ activeCollectionId: id });
+    try {
+      await invoke("set_active_collection", { collectionid: id ?? null });
+      if (id) {
+        await get().fetchCollectionTree(id);
+      } else {
+        set({ activeCollectionTree: null, collectionTrees: [] });
+      }
+    } catch (error) {
+      console.error("Failed to persist active collection:", error);
     }
   },
 
@@ -219,15 +300,16 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     set({ isLoadingCollections: true });
 
     try {
-      await invoke<CollectionTree>("create_collection", {
+      const newCollection = await invoke<Collection>("create_collection", {
         workspaceid: activeWorkspaceId,
         name,
       });
-      await get().fetchCollections(); // Refresh the collection list after creation
-      set({
-        // collectionTrees: [...state.collectionTrees, newCollection],
+      set((state) => ({
+        collections: [...state.collections, newCollection],
+        activeCollectionId: newCollection.id,
         isLoadingCollections: false,
-      });
+      }));
+      await get().setActiveCollection(newCollection.id);
     } catch (err) {
       set({ error: String(err), isLoadingCollections: false });
     }
@@ -237,12 +319,29 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     set({ isLoadingCollections: true });
     try {
       await invoke("delete_collection", { collectionid: collectionId });
-      set((state) => ({
-        collectionTrees: state.collectionTrees.filter(
-          (c) => c.collection.id !== collectionId,
-        ),
+      const currentActive = get().activeCollectionId;
+      const nextCollections = get().collections.filter(
+        (c) => c.id !== collectionId,
+      );
+      let nextActiveId = currentActive;
+
+      if (currentActive === collectionId) {
+        nextActiveId =
+          nextCollections.length > 0 ? nextCollections[0].id : null;
+      }
+
+      set({
+        collections: nextCollections,
+        activeCollectionId: nextActiveId,
         isLoadingCollections: false,
-      }));
+      });
+
+      if (nextActiveId) {
+        await get().setActiveCollection(nextActiveId);
+      } else {
+        set({ activeCollectionTree: null, collectionTrees: [] });
+        await invoke("set_active_collection", { collectionid: null });
+      }
     } catch (err) {
       console.error("Error deleting collection:", err);
       set({ error: String(err), isLoadingCollections: false });
@@ -254,14 +353,24 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     set({ isLoadingCollections: true });
     try {
       await invoke("rename_collection", { collectionid: collectionId, name });
-      set((state) => ({
-        collectionTrees: state.collectionTrees.map((c) =>
-          c.collection.id === collectionId
-            ? { ...c, collection: { ...c.collection, name } }
-            : c,
-        ),
-        isLoadingCollections: false,
-      }));
+      set((state) => {
+        const nextCollections = state.collections.map((c) =>
+          c.id === collectionId ? { ...c, name } : c,
+        );
+        let nextTree = state.activeCollectionTree;
+        if (nextTree && nextTree.collection.id === collectionId) {
+          nextTree = {
+            ...nextTree,
+            collection: { ...nextTree.collection, name },
+          };
+        }
+        return {
+          collections: nextCollections,
+          activeCollectionTree: nextTree,
+          collectionTrees: nextTree ? [nextTree] : [],
+          isLoadingCollections: false,
+        };
+      });
     } catch (err) {
       console.log("Error renaming collection:", err);
       set({ error: String(err), isLoadingCollections: false });
@@ -272,12 +381,15 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     if (!newName.trim()) return;
     set({ isLoadingCollections: true });
     try {
-      await invoke("clone_collection", {
+      const cloned = await invoke<Collection>("clone_collection", {
         collectionid: collectionId,
         newname: newName,
       });
-      await get().fetchCollections(); // Refresh the collection list after cloning
-      set({ isLoadingCollections: false });
+      set((state) => ({
+        collections: [...state.collections, cloned],
+        isLoadingCollections: false,
+      }));
+      await get().setActiveCollection(cloned.id);
     } catch (err) {
       console.error("Error cloning collection:", err);
       set({ error: String(err), isLoadingCollections: false });
@@ -291,30 +403,33 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     name: string,
   ) => {
     if (!name.trim()) return;
-    set({ isLoadingCollections: true });
+    set({ isLoadingCollectionTree: true });
     try {
       await invoke("create_folder", {
         collectionid: collectionId,
         parentfolderid: parentFolderId,
         name,
       });
-      await get().fetchCollections(); // Refresh the collection list after folder creation
-      set({ isLoadingCollections: false });
+      await get().fetchCollectionTree(collectionId);
     } catch (err) {
       console.error("Error creating folder:", err);
-      set({ error: String(err), isLoadingCollections: false });
+      set({ error: String(err), isLoadingCollectionTree: false });
     }
   },
 
   deleteFolder: async (folderId: string) => {
-    set({ isLoadingCollections: true });
+    const { activeCollectionId } = get();
+    set({ isLoadingCollectionTree: true });
     try {
       await invoke("delete_folder", { folderid: folderId });
-      await get().fetchCollections(); // Refresh the collection list after folder deletion
-      set({ isLoadingCollections: false });
+      if (activeCollectionId) {
+        await get().fetchCollectionTree(activeCollectionId);
+      } else {
+        set({ isLoadingCollectionTree: false });
+      }
     } catch (err) {
       console.error("Error deleting folder:", err);
-      set({ error: String(err), isLoadingCollections: false });
+      set({ error: String(err), isLoadingCollectionTree: false });
     }
   },
 
@@ -324,18 +439,17 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     name: string,
   ) => {
     if (!name.trim()) return;
-    set({ isLoadingCollections: true });
+    set({ isLoadingCollectionTree: true });
     try {
       await invoke("rename_folder", {
         collectionid: collectionId,
         folderid: folderId,
         name,
       });
-      await get().fetchCollections(); // Refresh the collection list after folder renaming
-      set({ isLoadingCollections: false });
+      await get().fetchCollectionTree(collectionId);
     } catch (err) {
       console.error("Error renaming folder:", err);
-      set({ error: String(err), isLoadingCollections: false });
+      set({ error: String(err), isLoadingCollectionTree: false });
     }
   },
 
@@ -343,9 +457,9 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     collectionId: string,
     folderId: string | null,
     name: string,
-    type: string,
+    type: "WS" | "REST" | "GRPC",
   ) => {
-    set({ isLoadingCollections: true });
+    set({ isLoadingCollectionTree: true });
     try {
       console.log(
         "Creating request:",
@@ -361,11 +475,10 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
         name: name,
         reqtype: type,
       });
-      await get().fetchCollections(); // Refresh the collection list after request creation
-      set({ isLoadingCollections: false });
+      await get().fetchCollectionTree(collectionId);
     } catch (err) {
       console.error("Error creating request:", err);
-      set({ error: String(err), isLoadingCollections: false });
+      set({ error: String(err), isLoadingCollectionTree: false });
     }
   },
 
@@ -374,7 +487,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     folderId: string | null,
     name: string,
   ) => {
-    set({ isLoadingCollections: true });
+    set({ isLoadingCollectionTree: true });
     try {
       console.log(
         "Creating WS request:",
@@ -389,35 +502,42 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
         folderid: folderId,
         name: name,
       });
-      await get().fetchCollections(); // Refresh the collection list after request creation
-      set({ isLoadingCollections: false });
+      await get().fetchCollectionTree(collectionId);
     } catch (err) {
       console.error("Error creating WS request:", err);
-      set({ error: String(err), isLoadingCollections: false });
+      set({ error: String(err), isLoadingCollectionTree: false });
     }
   },
 
   deleteRequest: async (requestId: string) => {
-    set({ isLoadingCollections: true });
+    const { activeCollectionId } = get();
+    set({ isLoadingCollectionTree: true });
     try {
       await invoke("delete_request", { requestid: requestId });
-      await get().fetchCollections(); // Refresh the collection list after request deletion
-      set({ isLoadingCollections: false });
+      if (activeCollectionId) {
+        await get().fetchCollectionTree(activeCollectionId);
+      } else {
+        set({ isLoadingCollectionTree: false });
+      }
     } catch (err) {
       console.error("Error deleting request:", err);
-      set({ error: String(err), isLoadingCollections: false });
+      set({ error: String(err), isLoadingCollectionTree: false });
     }
   },
 
   renameRequest: async (id: string, name: string) => {
-    set({ isLoadingCollections: true });
+    const { activeCollectionId } = get();
+    set({ isLoadingCollectionTree: true });
     try {
       await invoke("rename_request", { requestid: id, name });
-      await get().fetchCollections(); // Refresh the collection list after request rename
-      set({ isLoadingCollections: false });
+      if (activeCollectionId) {
+        await get().fetchCollectionTree(activeCollectionId);
+      } else {
+        set({ isLoadingCollectionTree: false });
+      }
     } catch (err) {
       console.error("Error renaming request:", err);
-      set({ error: String(err), isLoadingCollections: false });
+      set({ error: String(err), isLoadingCollectionTree: false });
     }
   },
 

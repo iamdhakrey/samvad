@@ -16,7 +16,7 @@ export type AppSettings = { followRedirects: boolean, maxRedirects: number,
  * certificates" toggle) rather than mirroring reqwest's "danger_*"
  * naming directly.
  */
-verifySslCertificates: boolean, timeoutMs: bigint, userAgent: string, proxyUrl: string | null, };
+verifySslCertificates: boolean, timeoutMs: bigint, userAgent: string, proxyUrl: string | null, font: FontSettings, };
 
 export type AuthConfig = { type: AuthType, basic: BasicAuth | null, bearer: BearerAuth | null, apiKey: ApiKeyAuth | null, };
 
@@ -59,7 +59,11 @@ export type Folder = { id: string, collectionId: string, parentFolderId: string 
 
 export type FolderNode = { folder: Folder, children: Array<FolderNode>, requests: Array<RequestItem>, };
 
+export type FontSettings = { appFontFamily: string, fontFamily: string, customFontPath: string | null, fontSize: number, lineHeight: number, enableLigatures: boolean, };
+
 export type GrpcEventType = "info" | "error" | "clientMessage" | "serverMessage" | "connectionStart" | "connectionEnd";
+
+export type GrpcMethod = { name: string, fullName: string, requestType: string, responseType: string, streamType: GrpcStreamType, };
 
 export type GrpcMethodType = "Unary" | "ClientStreaming" | "ServerStreaming" | "BidirectionalStreaming";
 
@@ -107,7 +111,11 @@ metadata: { [key in string]: string },
  */
 message: string, };
 
+export type GrpcService = { name: string, fullName: string, methods: Array<GrpcMethod>, };
+
 export type GrpcStreamEvent = { connectionId: string, direction: string, message: string, timestamp: string, };
+
+export type GrpcStreamType = "unary" | "server_stream" | "client_stream" | "bidi_stream";
 
 export type HistoryEntry = { id: string, requestId: string | null, name: string | null, method: HttpMethod, url: string, status: number, durationMs: bigint, createdAt: string, };
 

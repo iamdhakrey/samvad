@@ -6,6 +6,7 @@ import WebSocketPanel from "./components/WebSocketPanel";
 import CommandPalette from "./components/CommandPalette";
 import HistoryDrawer from "./components/HistoryDrawer";
 import { useVartaStore } from "./store/vartaStore";
+import { useSettingsStore, DEFAULT_FONT_SETTINGS } from "./store/settingStore";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useAuth0Desktop } from "./hooks/useAuth0Desktop";
 import { useResizablePanel } from "./hooks/useResizablePanel";
@@ -43,6 +44,23 @@ export default function App() {
       cleanup.then((fn) => fn());
     };
   }, [initWsListener]);
+
+  const initFonts = useSettingsStore(s => s.initFonts);
+  const settingsFont = useSettingsStore(s => s.settings?.font);
+  const font = settingsFont || DEFAULT_FONT_SETTINGS;
+
+  useEffect(() => {
+    initFonts();
+  }, [initFonts]);
+
+  useEffect(() => {
+    if (font.appFontFamily) {
+      document.documentElement.style.setProperty("--font-sans", font.appFontFamily);
+    }
+    if (font.fontFamily) {
+      document.documentElement.style.setProperty("--font-mono", font.fontFamily);
+    }
+  }, [font.appFontFamily, font.fontFamily]);
 
   return (
     <>
@@ -93,40 +111,39 @@ export default function App() {
             {activeTab && isGrpcTab ? (
               <GrpcEditor isMobile={isMobile} />
             ) : (
-              <div className="min-h-0 flex-1 overflow-hidden">
-                <RequestEditor isMobile={isMobile} />
-              </div>
-            )}
-            {/*<div className="min-h-0 flex-1 overflow-hidden">
-              <RequestEditor isMobile={isMobile} />
-            </div>*/}
-
-            {activeTab && (
               <>
-                {/* Drag-resize handle — desktop only */}
-                {!isMobile && (
-                  <div
-                    onMouseDown={onMouseDown}
-                    className="h-1 shrink-0 cursor-row-resize bg-border hover:bg-primary/60"
-                  />
-                )}
-
-                {/* Response / WebSocket panel */}
-                <div
-                  style={isMobile ? { height: "45vh" } : { height }}
-                  className="shrink-0 border-t border-border bg-bg"
-                >
-                  {isWsTab ? (
-                    <WebSocketPanel tab={activeTab} isMobile={isMobile} />
-                  ) : (
-                    <ResponsePanel
-                      response={activeTab.response}
-                      isSending={activeTab.isSending}
-                      error={activeTab.error}
-                      isMobile={isMobile}
-                    />
-                  )}
+                <div className="min-h-0 flex-1 overflow-hidden">
+                  <RequestEditor isMobile={isMobile} />
                 </div>
+
+                {activeTab && (
+                  <>
+                    {/* Drag-resize handle — desktop only */}
+                    {!isMobile && (
+                      <div
+                        onMouseDown={onMouseDown}
+                        className="h-1 shrink-0 cursor-row-resize bg-border hover:bg-primary/60"
+                      />
+                    )}
+
+                    {/* Response / WebSocket panel */}
+                    <div
+                      style={isMobile ? { height: "45vh" } : { height }}
+                      className="shrink-0 border-t border-border bg-bg"
+                    >
+                      {isWsTab ? (
+                        <WebSocketPanel tab={activeTab} isMobile={isMobile} />
+                      ) : (
+                        <ResponsePanel
+                          response={activeTab.response}
+                          isSending={activeTab.isSending}
+                          error={activeTab.error}
+                          isMobile={isMobile}
+                        />
+                      )}
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>

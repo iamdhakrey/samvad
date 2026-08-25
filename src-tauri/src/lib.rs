@@ -6,9 +6,9 @@ use tokio::sync::Mutex;
 
 use crate::commands::collections::{
     clone_collection, create_collection, create_folder, create_request, create_ws_request,
-    delete_collection, delete_folder, delete_request, duplicate_request, get_collection_trees,
-    get_request, rename_collection, rename_folder, rename_request, save_request,
-    set_active_collection,
+    delete_collection, delete_folder, delete_request, duplicate_request, get_collection_tree,
+    get_collection_trees, get_request, list_collections, rename_collection, rename_folder,
+    rename_request, save_request, set_active_collection,
 };
 use crate::commands::environments::{
     create_environment, delete_environment, list_environments, list_variables, rename_environment,
@@ -29,6 +29,7 @@ use crate::ws::{
 use crate::commands::auth::{self, PkceSessionState};
 use crate::commands::grpc;
 
+use crate::commands::fonts;
 use crate::commands::history::{clear_history, delete_history_entry, list_history};
 
 mod commands;
@@ -95,6 +96,8 @@ pub fn run() {
             get_active_state,
             get_active_state_full,
             //  Collection commands
+            list_collections,
+            get_collection_tree,
             get_collection_trees,
             create_collection,
             rename_collection,
@@ -147,9 +150,12 @@ pub fn run() {
             auth::auth_logout,
             // gRPC
             grpc::grpc_reflect,
+            grpc::grpc_parse_proto,
             grpc::grpc_invoke,
             grpc::grpc_cancel,
             grpc::grpc_send_message,
+            // fonts
+            fonts::get_system_fonts,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Samvad application");

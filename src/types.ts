@@ -1,14 +1,16 @@
 import {
   ApiRequest,
   ApiResponse,
+  Collection,
   CollectionTree,
   EnvironmentVariable,
   EnvironmentWithVariables,
-  HttpMethod,
   RequestItem,
   UploadedFile,
   WsSavedMessage,
 } from "@samvad-internal/models";
+
+export type { Collection };
 
 export type AuthType = "none" | "basic" | "bearer" | "apiKey";
 
@@ -27,12 +29,6 @@ export interface CollectionFolder {
   id: string;
   name: string;
   requests: ApiRequest[];
-}
-
-export interface Collection {
-  id: string;
-  name: string;
-  folders: CollectionFolder[];
 }
 
 // ── WebSocket types ──────────────────────────────────────────────────
@@ -85,21 +81,18 @@ export interface FolderNode {
   requests: ApiRequest[];
 }
 
-export interface Collection {
-  id: string;
-  workspace_id: string;
-  name: string;
-  sort_order: number;
-}
-
 export interface WorkspaceStore {
   environments: EnvironmentWithVariables[];
   workspaces: Workspace[];
-  collectionTrees: CollectionTree[];
+  collections: Collection[];
   activeWorkspaceId: string | null;
+  activeCollectionId: string | null;
+  activeCollectionTree: CollectionTree | null;
+  collectionTrees: CollectionTree[];
   activeEnvironmentId: string | null;
   isLoading: boolean;
   isLoadingCollections: boolean;
+  isLoadingCollectionTree: boolean;
   error: string | null;
 
   fetchWorkspaces: () => Promise<void>;
@@ -111,12 +104,12 @@ export interface WorkspaceStore {
 
   // Collections
   fetchCollections: () => Promise<void>;
+  fetchCollectionTree: (collectionId: string) => Promise<void>;
+  setActiveCollection: (id: string | null) => Promise<void>;
   createCollection: (name: string) => Promise<void>;
   renameCollection: (id: string, name: string) => Promise<void>;
   deleteCollection: (id: string) => Promise<void>;
   cloneCollection: (id: string, newName: string) => Promise<void>;
-  // addRequestToCollection: (collectionId: string, request: ApiRequest) => Promise<void>;
-  // removeRequestFromCollection: (collectionId: string, requestId: string) => Promise<void>;
 
   // Folders
   createFolder: (
@@ -136,13 +129,13 @@ export interface WorkspaceStore {
     collectionId: string,
     folderId: string | null,
     name: string,
+    type: "WS" | "REST" | "GRPC",
   ) => Promise<void>;
   createWs: (
     collectionId: string,
     folderId: string | null,
     name: string,
   ) => Promise<void>;
-  // updateRequest: (requestId: string, updatedRequest: Partial<ApiRequest>) => Promise<void>;
   deleteRequest: (requestId: string) => Promise<void>;
   renameRequest: (id: string, name: string) => Promise<void>;
 
@@ -157,7 +150,7 @@ export interface WorkspaceStore {
   setActiveEnvironment: (id: string | null) => Promise<void>;
 }
 
-export const MethodStyles: Record<HttpMethod, string> = {
+export const MethodStyles: Record<string, string> = {
   GET: "text-method-get",
   POST: "text-secondary",
   PUT: "text-warning",
@@ -167,6 +160,7 @@ export const MethodStyles: Record<HttpMethod, string> = {
   HEAD: "text-text-muted",
   WS: "text-method-ws",
   QUERY: "text-method-query",
+  GRPC: "text-method-grpc",
 };
 
 // ── gRPC types ───────────────────────────────────────────────────────
@@ -179,46 +173,31 @@ export type GrpcCallStatus =
 
 export interface GrpcMessage {
   id: string;
-
   direction: "sent" | "received";
-
   data: string; // JSON-stringified proto message
-
   timestamp: string;
-
   statusCode?: string; // gRPC status code label e.g. "OK", "UNAVAILABLE"
-
   isError?: boolean;
-
   latencyMs?: number;
 }
 
 export interface GrpcMethod {
   name: string;
-
   fullName: string; // package.ServiceName/MethodName
-
   requestType: string;
-
   responseType: string;
-
   streamType: GrpcStreamType;
 }
 
 export interface GrpcService {
   name: string;
-
   fullName: string;
-
   methods: GrpcMethod[];
 }
 
 export interface GrpcMetadataRow {
   id: string;
-
   key: string;
-
   value: string;
-
   enabled: boolean;
 }
