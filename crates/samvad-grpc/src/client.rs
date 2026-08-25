@@ -278,8 +278,19 @@ pub async fn reflect_services(
         }
     }
 
+    Ok(descriptor_pool_to_services(&pool))
+}
+
+pub fn descriptor_pool_to_services(pool: &DescriptorPool) -> Vec<GrpcService> {
     let mut grpc_services = Vec::new();
     for service_desc in pool.services() {
+        // Skip reflection services
+        if service_desc.full_name() == "grpc.reflection.v1alpha.ServerReflection"
+            || service_desc.full_name() == "grpc.reflection.v1.ServerReflection"
+        {
+            continue;
+        }
+
         let mut methods = Vec::new();
         for method_desc in service_desc.methods() {
             let stream_type = match (
@@ -305,7 +316,65 @@ pub async fn reflect_services(
             methods,
         });
     }
-    Ok(grpc_services)
+    grpc_services
+}
+
+/// Compile a list of `.proto` files from disk using `protox::compile`
+/// and return a `DescriptorPool` containing all parsed definitions.
+pub fn compile_proto_files<P: AsRef<std::path::Path>, I: AsRef<std::path::Path>>(
+    files: &[P],
+    include_dirs: &[I],
+) -> AppResult<DescriptorPool> {
+    let descriptor_set = protox::compile(files, include_dirs)
+        .map_err(|e| AppError::GrpcError(format!("Failed to compile proto files: {}", e)))?;
+
+    let pool = DescriptorPool::from_file_descriptor_set(descriptor_set)
+        .map_err(|e| AppError::GrpcError(format!("Failed to build DescriptorPool: {}", e)))?;
+
+    Ok(pool)
+}
+
+/// Compile in-memory `.proto` source text by writing it to a temporary location
+/// and compiling via `protox::compile`.
+pub fn compile_proto_source(
+    name: impl AsRef<std::path::Path>,
+    source: impl AsRef<str>,
+) -> AppResult<DescriptorPool> {
+    let temp_dir = std::env::temp_dir().join("samvad_proto");
+    std::fs::create_dir_all(&temp_dir)
+        .map_err(|e| AppError::GrpcError(format!("Failed to create temp proto dir: {}", e)))?;
+
+    let file_path = temp_dir.join(name.as_ref());
+    if let Some(parent) = file_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| AppError::GrpcError(format!("Failed to create parent dir: {}", e)))?;
+    }
+
+    std::fs::write(&file_path, source.as_ref())
+        .map_err(|e| AppError::GrpcError(format!("Failed to write temp proto file: {}", e)))?;
+
+    let pool = compile_proto_files(&[&file_path], &[&temp_dir])?;
+    let _ = std::fs::remove_file(&file_path);
+
+    Ok(pool)
+}
+
+/// Find a `MethodDescriptor` from a `DescriptorPool` given service and method names.
+pub fn find_method_descriptor(
+    pool: &DescriptorPool,
+    service_name: &str,
+    method_name: &str,
+) -> AppResult<prost_reflect::MethodDescriptor> {
+    let service_desc = pool
+        .get_service_by_name(service_name)
+        .ok_or_else(|| AppError::GrpcError(format!("Service '{}' not found in descriptor pool", service_name)))?;
+
+    let method_desc = service_desc
+        .methods()
+        .find(|m| m.name() == method_name || m.full_name() == method_name)
+        .ok_or_else(|| AppError::GrpcError(format!("Method '{}' not found in service '{}'", method_name, service_name)))?;
+
+    Ok(method_desc)
 }
 
 pub async fn get_descriptor_pool_from_reflection(

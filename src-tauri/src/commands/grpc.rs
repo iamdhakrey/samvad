@@ -1,6 +1,9 @@
 use crate::state::AppState;
 use samvad_error::{AppError, AppResult};
-use samvad_grpc::client::{get_descriptor_pool_from_reflection, invoke_unary, reflect_services};
+use samvad_grpc::client::{
+    compile_proto_files, descriptor_pool_to_services, find_method_descriptor,
+    get_descriptor_pool_from_reflection, invoke_unary, reflect_services,
+};
 use samvad_models::{GrpcRequest, GrpcResponse, GrpcService};
 use std::collections::BTreeMap;
 use std::time::Instant;
@@ -13,8 +16,16 @@ pub async fn grpc_reflect(
 ) -> AppResult<Vec<GrpcService>> {
     let settings = crate::db::settings::get_settings(&state.data_dir)?;
     let res = reflect_services(&address, settings.verify_ssl_certificates).await;
-    println!("resr");
     return res;
+}
+
+#[command]
+pub async fn grpc_parse_proto(
+    files: Vec<String>,
+    include_dirs: Vec<String>,
+) -> AppResult<Vec<GrpcService>> {
+    let pool = compile_proto_files(&files, &include_dirs)?;
+    Ok(descriptor_pool_to_services(&pool))
 }
 
 #[command]
@@ -28,17 +39,14 @@ pub async fn grpc_invoke(
 
     let start = Instant::now();
 
-    let pool =
+    let pool = if request.use_reflection || request.proto_file_ids.is_empty() {
         get_descriptor_pool_from_reflection(&request.url, validate_certificates, &request.service)
-            .await?;
-    let service_desc = pool
-        .get_service_by_name(&request.service)
-        .ok_or_else(|| AppError::GrpcError(format!("Service {} not found", request.service)))?;
+            .await?
+    } else {
+        compile_proto_files(&request.proto_file_ids, &[] as &[String])?
+    };
 
-    let method_desc = service_desc
-        .methods()
-        .find(|m| m.name() == request.method)
-        .ok_or_else(|| AppError::GrpcError(format!("Method {} not found", request.method)))?;
+    let method_desc = find_method_descriptor(&pool, &request.service, &request.method)?;
 
     let mut metadata = BTreeMap::new();
     for row in request.metadata {
