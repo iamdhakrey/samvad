@@ -440,13 +440,41 @@ pub async fn get_descriptor_pool_from_reflection(
     Ok(pool)
 }
 
+pub fn extract_metadata(map: &tonic::metadata::MetadataMap) -> BTreeMap<String, String> {
+    let mut out = BTreeMap::new();
+    for key_and_val in map.iter() {
+        match key_and_val {
+            tonic::metadata::KeyAndValueRef::Ascii(k, v) => {
+                if let Ok(val_str) = v.to_str() {
+                    out.insert(k.as_str().to_string(), val_str.to_string());
+                }
+            }
+            tonic::metadata::KeyAndValueRef::Binary(k, v) => {
+                out.insert(
+                    k.as_str().to_string(),
+                    format!("<binary: {} bytes>", v.as_encoded_bytes().len()),
+                );
+            }
+        }
+    }
+    out
+}
+
+#[derive(Debug, Clone)]
+pub struct UnaryResult {
+    pub message: String,
+    pub status: u16,
+    pub status_text: String,
+    pub metadata: BTreeMap<String, String>,
+}
+
 pub async fn invoke_unary(
     uri_str: &str,
     validate_certificates: bool,
     method: prost_reflect::MethodDescriptor,
-    _metadata: BTreeMap<String, String>,
+    metadata: BTreeMap<String, String>,
     payload: &str,
-) -> AppResult<String> {
+) -> AppResult<UnaryResult> {
     let normalized_uri = if uri_str.starts_with("http://") || uri_str.starts_with("https://") {
         uri_str.to_string()
     } else {
@@ -465,7 +493,6 @@ pub async fn invoke_unary(
 
     let svc = tower::service_fn(move |mut req: http::Request<_>| {
         let uri = uri.clone();
-        println!("uri {:?}", uri);
         let path_and_query = req
             .uri()
             .path_and_query()
@@ -484,9 +511,6 @@ pub async fn invoke_unary(
 
     let mut grpc = tonic::client::Grpc::new(svc);
 
-    // let path = http::uri::PathAndQuery::try_from(format!("/{}", method.full_name()))
-    //     .map_err(|e| AppError::GrpcError(format!("Invalid method path: {}", e)))?;
-
     let path_str = format!("/{}/{}", method.parent_service().full_name(), method.name());
     let path = http::uri::PathAndQuery::try_from(path_str)
         .map_err(|e| AppError::GrpcError(format!("Invalid method path: {}", e)))?;
@@ -498,34 +522,63 @@ pub async fn invoke_unary(
             |e| AppError::GrpcError(format!("Failed to parse JSON into protobuf: {}", e)),
         )?;
 
-    let req = tonic::Request::new(msg);
-    // decorate_req(&metadata, &mut req)
-    //     .map_err(|e| AppError::GrpcError(format!("Failed to decorate req: {}", e)))?;
+    let mut req = tonic::Request::new(msg);
+    let _ = decorate_req(&metadata, &mut req);
 
     let codec = DynamicCodec::new(method.clone());
     grpc.ready()
         .await
         .map_err(|e| AppError::GrpcError(format!("Connection not ready: {}", e)))?;
 
-    let res = grpc
-        .unary(req, path, codec)
-        .await
-        .map_err(|e| AppError::GrpcError(format!("Unary call failed: {}", e)))?;
+    match grpc.unary(req, path, codec).await {
+        Ok(res) => {
+            let resp_metadata = extract_metadata(res.metadata());
+            let resp_msg = res.into_inner();
+            let json_resp = serde_json::to_string(&resp_msg).map_err(|e| {
+                AppError::GrpcError(format!("Failed to serialize response to JSON: {}", e))
+            })?;
 
-    let resp_msg = res.into_inner();
+            Ok(UnaryResult {
+                message: json_resp,
+                status: 0,
+                status_text: "OK".to_string(),
+                metadata: resp_metadata,
+            })
+        }
+        Err(status) => {
+            let trailing_metadata = extract_metadata(status.metadata());
+            let code = status.code();
+            let status_num = code as u16;
+            let status_text = format!("{:?}", code).to_uppercase();
+            let error_message = if status.message().is_empty() {
+                format!("gRPC Error (Code {})", status_num)
+            } else {
+                status.message().to_string()
+            };
 
-    // Convert back to JSON
-    let json_resp = serde_json::to_string(&resp_msg)
-        .map_err(|e| AppError::GrpcError(format!("Failed to serialize response to JSON: {}", e)))?;
-    // println!(" json res[p{:?}", json_resp);
-    Ok(json_resp)
+            Ok(UnaryResult {
+                message: error_message,
+                status: status_num,
+                status_text,
+                metadata: trailing_metadata,
+            })
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 pub enum StreamEvent {
     Message(String),
-    Error(String),
-    Closed,
+    Metadata(BTreeMap<String, String>),
+    Error {
+        message: String,
+        code: u16,
+        status_text: String,
+        metadata: BTreeMap<String, String>,
+    },
+    Closed {
+        metadata: BTreeMap<String, String>,
+    },
 }
 
 pub struct GrpcStreamHandle {
@@ -608,20 +661,24 @@ pub async fn start_grpc_stream(
             }
         }
 
-        let mut response_stream = grpc
-            .streaming(req, path, codec)
-            .await
-            .map_err(|e| {
-                AppError::GrpcError(format!("Bidirectional streaming call failed: {}", e))
-            })?
-            .into_inner();
+        let res = grpc.streaming(req, path, codec).await.map_err(|e| {
+            AppError::GrpcError(format!("Bidirectional streaming call failed: {}", e))
+        })?;
 
+        // Send initial response headers metadata
+        let initial_meta = extract_metadata(res.metadata());
+        if !initial_meta.is_empty() {
+            let _ = event_tx.send(StreamEvent::Metadata(initial_meta)).await;
+        }
+
+        let mut response_stream = res.into_inner();
         let event_tx_clone = event_tx.clone();
+
         tokio::spawn(async move {
             loop {
                 tokio::select! {
                     _ = cancel_token.cancelled() => {
-                        let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                        let _ = event_tx_clone.send(StreamEvent::Closed { metadata: Default::default() }).await;
                         break;
                     }
                     msg_result = response_stream.message() => {
@@ -635,11 +692,24 @@ pub async fn start_grpc_stream(
                                 }
                             }
                             Ok(None) => {
-                                let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                                let _ = event_tx_clone.send(StreamEvent::Closed { metadata: Default::default() }).await;
                                 break;
                             }
-                            Err(e) => {
-                                let _ = event_tx_clone.send(StreamEvent::Error(e.to_string())).await;
+                            Err(status) => {
+                                let trailing_metadata = extract_metadata(status.metadata());
+                                let code = status.code() as u16;
+                                let status_text = format!("{:?}", status.code()).to_uppercase();
+                                let message = if status.message().is_empty() {
+                                    format!("gRPC Error (Code {})", code)
+                                } else {
+                                    status.message().to_string()
+                                };
+                                let _ = event_tx_clone.send(StreamEvent::Error {
+                                    message,
+                                    code,
+                                    status_text,
+                                    metadata: trailing_metadata,
+                                }).await;
                                 break;
                             }
                         }
@@ -673,19 +743,36 @@ pub async fn start_grpc_stream(
         tokio::spawn(async move {
             tokio::select! {
                 _ = cancel_token.cancelled() => {
-                    let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                    let _ = event_tx_clone.send(StreamEvent::Closed { metadata: Default::default() }).await;
                 }
                 resp_result = grpc.client_streaming(req, path, codec) => {
                     match resp_result {
                         Ok(resp) => {
+                            let resp_meta = extract_metadata(resp.metadata());
+                            if !resp_meta.is_empty() {
+                                let _ = event_tx_clone.send(StreamEvent::Metadata(resp_meta.clone())).await;
+                            }
                             let resp_msg = resp.into_inner();
                             let json_resp = serde_json::to_string(&resp_msg)
                                 .unwrap_or_else(|e| format!(r#"{{"error": "serialization failed: {}"}}"#, e));
                             let _ = event_tx_clone.send(StreamEvent::Message(json_resp)).await;
-                            let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                            let _ = event_tx_clone.send(StreamEvent::Closed { metadata: resp_meta }).await;
                         }
-                        Err(e) => {
-                            let _ = event_tx_clone.send(StreamEvent::Error(e.to_string())).await;
+                        Err(status) => {
+                            let trailing_metadata = extract_metadata(status.metadata());
+                            let code = status.code() as u16;
+                            let status_text = format!("{:?}", status.code()).to_uppercase();
+                            let message = if status.message().is_empty() {
+                                format!("gRPC Error (Code {})", code)
+                            } else {
+                                status.message().to_string()
+                            };
+                            let _ = event_tx_clone.send(StreamEvent::Error {
+                                message,
+                                code,
+                                status_text,
+                                metadata: trailing_metadata,
+                            }).await;
                         }
                     }
                 }
@@ -707,18 +794,24 @@ pub async fn start_grpc_stream(
         let mut req = tonic::Request::new(msg);
         let _ = decorate_req(&metadata, &mut req);
 
-        let mut response_stream = grpc
+        let res = grpc
             .server_streaming(req, path, codec)
             .await
-            .map_err(|e| AppError::GrpcError(format!("Server streaming call failed: {}", e)))?
-            .into_inner();
+            .map_err(|e| AppError::GrpcError(format!("Server streaming call failed: {}", e)))?;
 
+        let initial_meta = extract_metadata(res.metadata());
+        if !initial_meta.is_empty() {
+            let _ = event_tx.send(StreamEvent::Metadata(initial_meta)).await;
+        }
+
+        let mut response_stream = res.into_inner();
         let event_tx_clone = event_tx.clone();
+
         tokio::spawn(async move {
             loop {
                 tokio::select! {
                     _ = cancel_token.cancelled() => {
-                        let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                        let _ = event_tx_clone.send(StreamEvent::Closed { metadata: Default::default() }).await;
                         break;
                     }
                     msg_result = response_stream.message() => {
@@ -732,11 +825,24 @@ pub async fn start_grpc_stream(
                                 }
                             }
                             Ok(None) => {
-                                let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                                let _ = event_tx_clone.send(StreamEvent::Closed { metadata: Default::default() }).await;
                                 break;
                             }
-                            Err(e) => {
-                                let _ = event_tx_clone.send(StreamEvent::Error(e.to_string())).await;
+                            Err(status) => {
+                                let trailing_metadata = extract_metadata(status.metadata());
+                                let code = status.code() as u16;
+                                let status_text = format!("{:?}", status.code()).to_uppercase();
+                                let message = if status.message().is_empty() {
+                                    format!("gRPC Error (Code {})", code)
+                                } else {
+                                    status.message().to_string()
+                                };
+                                let _ = event_tx_clone.send(StreamEvent::Error {
+                                    message,
+                                    code,
+                                    status_text,
+                                    metadata: trailing_metadata,
+                                }).await;
                                 break;
                             }
                         }

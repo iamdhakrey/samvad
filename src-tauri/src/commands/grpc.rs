@@ -1,8 +1,7 @@
 use crate::state::AppState;
-use samvad_error::{AppError, AppResult};
+use samvad_error::AppResult;
 use samvad_grpc::client::{
-    compile_proto_files, descriptor_pool_to_services, find_method_descriptor,
-    get_descriptor_pool_from_reflection, invoke_unary, reflect_services, start_grpc_stream,
+    descriptor_pool_to_services, find_method_descriptor, invoke_unary, start_grpc_stream,
     StreamEvent,
 };
 use samvad_grpc::manager::GrpcActiveStream;
@@ -19,16 +18,23 @@ pub async fn grpc_reflect(
     address: String,
 ) -> AppResult<Vec<GrpcService>> {
     let settings = crate::db::settings::get_settings(&state.data_dir)?;
-    let res = reflect_services(&address, settings.verify_ssl_certificates).await;
-    return res;
+    let services = state
+        .grpc_state
+        .reflect_and_cache(&address, settings.verify_ssl_certificates)
+        .await?;
+    Ok(services)
 }
 
 #[command]
 pub async fn grpc_parse_proto(
+    state: State<'_, AppState>,
     files: Vec<String>,
     include_dirs: Vec<String>,
 ) -> AppResult<Vec<GrpcService>> {
-    let pool = compile_proto_files(&files, &include_dirs)?;
+    let pool = state
+        .grpc_state
+        .get_or_compile_proto(&files, &include_dirs)
+        .await?;
     Ok(descriptor_pool_to_services(&pool))
 }
 
@@ -42,11 +48,17 @@ pub async fn grpc_invoke(
     let validate_certificates = settings.verify_ssl_certificates;
     let start = Instant::now();
 
+    // Use cached descriptor pool (prevents recompiling/re-reflecting on every request)
     let pool = if request.use_reflection || request.proto_file_ids.is_empty() {
-        get_descriptor_pool_from_reflection(&request.url, validate_certificates, &request.service)
+        state
+            .grpc_state
+            .get_or_reflect_pool(&request.url, validate_certificates, &request.service)
             .await?
     } else {
-        compile_proto_files(&request.proto_file_ids, &[] as &[String])?
+        state
+            .grpc_state
+            .get_or_compile_proto(&request.proto_file_ids, &[])
+            .await?
     };
 
     let method_desc = find_method_descriptor(&pool, &request.service, &request.method)?;
@@ -81,11 +93,11 @@ pub async fn grpc_invoke(
             input_descriptor: method_desc.input(),
         };
 
-        state.grpc_streams.insert(active_stream).await;
+        state.grpc_state.stream_manager.insert(active_stream).await;
 
         let app_handle = window.app_handle().clone();
         let cid = connection_id.clone();
-        let grpc_streams = state.grpc_streams.clone();
+        let stream_manager = state.grpc_state.stream_manager.clone();
         let mut rx = stream_handle.rx;
 
         tokio::spawn(async move {
@@ -103,13 +115,27 @@ pub async fn grpc_invoke(
                             },
                         );
                     }
-                    StreamEvent::Error(err) => {
+                    StreamEvent::Metadata(meta) => {
+                        let _ = app_handle.emit(
+                            "grpc://metadata",
+                            serde_json::json!({
+                                "connectionId": cid,
+                                "metadata": meta,
+                            }),
+                        );
+                    }
+                    StreamEvent::Error {
+                        message,
+                        code,
+                        status_text,
+                        metadata,
+                    } => {
                         let _ = app_handle.emit(
                             "grpc://message",
                             GrpcStreamEvent {
                                 connection_id: cid.clone(),
                                 direction: "received".to_string(),
-                                message: format!("Error: {}", err),
+                                message: format!("{}: {}", status_text, message),
                                 timestamp: timestamp.clone(),
                             },
                         );
@@ -118,22 +144,26 @@ pub async fn grpc_invoke(
                             serde_json::json!({
                                 "connectionId": cid,
                                 "status": "error",
-                                "error": err,
+                                "error": message,
+                                "statusCode": code,
+                                "statusText": status_text,
+                                "metadata": metadata,
                             }),
                         );
                     }
-                    StreamEvent::Closed => {
+                    StreamEvent::Closed { metadata } => {
                         let _ = app_handle.emit(
                             "grpc://status",
                             serde_json::json!({
                                 "connectionId": cid,
                                 "status": "closed",
+                                "metadata": metadata,
                             }),
                         );
                     }
                 }
             }
-            let _ = grpc_streams.remove(&cid).await;
+            let _ = stream_manager.remove(&cid).await;
         });
 
         let duration_ms = start.elapsed().as_millis();
@@ -149,7 +179,7 @@ pub async fn grpc_invoke(
             message: "Stream established".to_string(),
         })
     } else {
-        let message = invoke_unary(
+        let unary_res = invoke_unary(
             &request.url,
             validate_certificates,
             method_desc,
@@ -161,12 +191,12 @@ pub async fn grpc_invoke(
         let duration_ms = start.elapsed().as_millis();
 
         Ok(GrpcResponse {
-            status: 0,
-            status_text: "OK".to_string(),
+            status: unary_res.status,
+            status_text: unary_res.status_text,
             time_ms: duration_ms,
-            size_bytes: message.len() as u64,
-            metadata: BTreeMap::new(),
-            message,
+            size_bytes: unary_res.message.len() as u64,
+            metadata: unary_res.metadata,
+            message: unary_res.message,
         })
     }
 }
@@ -179,12 +209,12 @@ pub async fn grpc_send_message(
     message: String,
 ) -> AppResult<()> {
     state
-        .grpc_streams
+        .grpc_state
+        .stream_manager
         .send_message(&connection_id, &message)
         .await
-        .map_err(|e| AppError::GrpcError(e))?;
+        .map_err(|e| samvad_error::AppError::GrpcError(e))?;
 
-    // Emit event so the message is reflected in the frontend sent message log
     let timestamp = chrono::Utc::now().to_rfc3339();
     let _ = app_handle.emit(
         "grpc://message",
@@ -205,7 +235,7 @@ pub async fn grpc_cancel(
     app_handle: AppHandle,
     connection_id: String,
 ) -> AppResult<()> {
-    let cancelled = state.grpc_streams.cancel(&connection_id).await;
+    let cancelled = state.grpc_state.stream_manager.cancel(&connection_id).await;
     if cancelled {
         let _ = app_handle.emit(
             "grpc://status",
