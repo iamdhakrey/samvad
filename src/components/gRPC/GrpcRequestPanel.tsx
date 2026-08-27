@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Trash2, Send, Radio } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { useVartaStore } from "../../store/vartaStore";
 import { useSettingsStore, DEFAULT_FONT_SETTINGS } from "../../store/settingStore";
@@ -25,8 +25,36 @@ export default function GrpcRequestPanel({ isMobile = false }: GrpcRequestPanelP
   const metadata = useVartaStore((s) => s.grpcMetadata);
   const setMetadata = useVartaStore((s) => s.setGrpcMetadata);
   const selectedMethod = useVartaStore((s) => s.grpcSelectedMethod);
+  const callStatus = useVartaStore((s) => s.grpcCallStatus);
+  const sendGrpcMessage = useVartaStore((s) => s.sendGrpcMessage);
+
   const settingsFont = useSettingsStore((s) => s.settings?.font);
   const { fontFamily, fontSize, enableLigatures, lineHeight } = settingsFont || DEFAULT_FONT_SETTINGS;
+
+  const isStreaming = callStatus === "streaming";
+  const acceptsOutbound =
+    selectedMethod?.streamType === "client_stream" ||
+    selectedMethod?.streamType === "bidi_stream";
+
+  const handleSendStreamMessage = () => {
+    if (!requestBody.trim() || !isStreaming) return;
+    sendGrpcMessage(requestBody);
+  };
+
+  // Keyboard shortcut Ctrl+Enter or Cmd+Enter to send stream message when streaming
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        if (isStreaming && acceptsOutbound) {
+          e.preventDefault();
+          handleSendStreamMessage();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isStreaming, acceptsOutbound, requestBody]);
 
   return (
     <div className="flex h-full flex-col">
@@ -50,19 +78,43 @@ export default function GrpcRequestPanel({ isMobile = false }: GrpcRequestPanelP
             )}
           </button>
         ))}
+
+        {/* Live Stream Indicator & Send Button in Tab Strip when streaming */}
+        {isStreaming && acceptsOutbound && activeTab === "message" && (
+          <div className="ml-auto flex items-center gap-2 py-1">
+            <span className="flex items-center gap-1 text-[11px] text-secondary font-medium animate-pulse">
+              <Radio size={11} />
+              Stream Active
+            </span>
+            <button
+              onClick={handleSendStreamMessage}
+              disabled={!requestBody.trim()}
+              className="flex items-center gap-1.5 rounded-md bg-brand-gradient px-3 py-1 text-xs font-medium text-white shadow-panel hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+              title="Send JSON message to active stream (Ctrl+Enter)"
+            >
+              <Send size={11} />
+              Send Message
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === "message" && (
           <div className="flex h-full flex-col">
-            {/* Type hint */}
+            {/* Type hint & shortcut info */}
             {selectedMethod && (
-              <div className={`flex items-center gap-2 border-b border-borderMuted ${isMobile ? "px-3 py-1.5" : "px-4 py-1.5"}`}>
+              <div className={`flex items-center justify-between border-b border-borderMuted ${isMobile ? "px-3 py-1.5" : "px-4 py-1.5"}`}>
                 <span className="text-[10px] font-mono text-text-muted">
                   Request type:{" "}
                   <span className="text-method-grpc">{selectedMethod.requestType}</span>
                 </span>
+                {isStreaming && acceptsOutbound && (
+                  <span className="text-[10px] text-text-muted font-mono">
+                    Press <kbd className="kbd">Ctrl+Enter</kbd> to stream
+                  </span>
+                )}
               </div>
             )}
 
@@ -96,6 +148,24 @@ export default function GrpcRequestPanel({ isMobile = false }: GrpcRequestPanelP
                 }}
               />
             </div>
+
+            {/* Outbound Streaming Floating Bar at bottom of Monaco if active */}
+            {isStreaming && acceptsOutbound && isMobile && (
+              <div className="border-t border-border bg-panel p-2 flex items-center justify-between">
+                <span className="text-xs text-secondary flex items-center gap-1 font-medium">
+                  <Radio size={12} className="animate-pulse" />
+                  Streaming
+                </span>
+                <button
+                  onClick={handleSendStreamMessage}
+                  disabled={!requestBody.trim()}
+                  className="flex items-center gap-1.5 rounded-md bg-brand-gradient px-4 py-1.5 text-xs font-medium text-white shadow-panel hover:opacity-90 disabled:opacity-50 transition-opacity"
+                >
+                  <Send size={12} />
+                  Send Message
+                </button>
+              </div>
+            )}
           </div>
         )}
 

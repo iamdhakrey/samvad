@@ -32,18 +32,21 @@ export default function App() {
   const isSidebarOpen = useVartaStore((s) => s.isSidebarOpen);
   const toggleSidebar = useVartaStore((s) => s.toggleSidebar);
   const initWsListener = useVartaStore((s) => s.initWsListener);
+  const initGrpcListener = useVartaStore((s) => s.initGrpcListener);
 
   // Detect if active tab is a WebSocket tab
   const isWsTab = activeTab?.request.method === "WS";
   const isGrpcTab = activeTab?.request.type === "grpc";
 
-  // Initialize Tauri WS event listeners on mount
+  // Initialize Tauri WS & gRPC event listeners on mount
   useEffect(() => {
-    const cleanup = initWsListener();
+    const cleanupWs = initWsListener();
+    const cleanupGrpc = initGrpcListener();
     return () => {
-      cleanup.then((fn) => fn());
+      cleanupWs.then((fn) => fn());
+      cleanupGrpc.then((fn) => fn());
     };
-  }, [initWsListener]);
+  }, [initWsListener, initGrpcListener]);
 
   const initFonts = useSettingsStore(s => s.initFonts);
   const settingsFont = useSettingsStore(s => s.settings?.font);

@@ -150,9 +150,8 @@ export default function Titlebar() {
   return (
     <header
       data-tauri-drag-region
-      className={`relative z-50 flex h-10 w-full select-none items-center justify-between border-b border-border/40 bg-panel/85 px-3 backdrop-blur-md ${
-        isMac ? "pl-[78px]" : "pl-3"
-      }`}
+      className={`relative z-50 flex h-10 w-full select-none items-center justify-between border-b border-border/40 bg-panel/85 px-3 backdrop-blur-md ${isMac ? "pl-[78px]" : "pl-3"
+        }`}
     >
       {/* ── Left Section: Workspace & Collection Selector Breadcrumb ── */}
       <div className="flex items-center gap-1.5" data-tauri-drag-region>
@@ -179,9 +178,8 @@ export default function Titlebar() {
               {activeWorkspace?.name || "Workspace"}
             </span>
             <ChevronDown
-              className={`w-3 h-3 text-text-muted transition-transform duration-150 ${
-                isWsOpen ? "rotate-180" : ""
-              }`}
+              className={`w-3 h-3 text-text-muted transition-transform duration-150 ${isWsOpen ? "rotate-180" : ""
+                }`}
             />
           </button>
 
@@ -199,11 +197,10 @@ export default function Titlebar() {
                   workspaces.map((ws) => (
                     <div
                       key={ws.id}
-                      className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${
-                        ws.id === activeWorkspaceId
+                      className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${ws.id === activeWorkspaceId
                           ? "bg-panel/60 text-text-primary font-medium"
                           : ""
-                      }`}
+                        }`}
                     >
                       {editingWsId === ws.id ? (
                         <form
@@ -349,9 +346,8 @@ export default function Titlebar() {
               <Loader2 className="w-3 h-3 animate-spin text-text-muted shrink-0" />
             ) : (
               <ChevronDown
-                className={`w-3 h-3 text-text-muted transition-transform duration-150 ${
-                  isColOpen ? "rotate-180" : ""
-                }`}
+                className={`w-3 h-3 text-text-muted transition-transform duration-150 ${isColOpen ? "rotate-180" : ""
+                  }`}
               />
             )}
           </button>
@@ -370,11 +366,10 @@ export default function Titlebar() {
                   collections.map((col) => (
                     <div
                       key={col.id}
-                      className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${
-                        col.id === activeCollectionId
+                      className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${col.id === activeCollectionId
                           ? "bg-panel/60 text-text-primary font-medium"
                           : ""
-                      }`}
+                        }`}
                     >
                       {editingColId === col.id ? (
                         <form
@@ -538,11 +533,6 @@ export default function Titlebar() {
         {/* Divider */}
         <div className="h-3.5 w-px bg-border/40" />
 
-        {/* Status Dot */}
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 font-medium pointer-events-none">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Ready</span>
-        </div>
 
         {/* Windows / Linux Controls */}
         {!isMac && (
