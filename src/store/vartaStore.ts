@@ -81,6 +81,8 @@ interface VartaState {
   grpcReflectionLoading: boolean;
   grpcLastLatencyMs: number | null;
   grpcConnectionId: string | null;
+  grpcResponseMetadata: Record<string, string>;
+  grpcResponseStatus: { code: number; text: string } | null;
 
   // ── gRPC actions ────────────────
   setGrpcTlsEnabled: (enabled: boolean) => void;
@@ -88,6 +90,7 @@ interface VartaState {
   setGrpcSelectedMethod: (method: GrpcMethod | null) => void;
   setGrpcRequestBody: (body: string) => void;
   setGrpcMetadata: (rows: GrpcMetadataRow[]) => void;
+  setGrpcResponseMetadata: (metadata: Record<string, string>) => void;
   addGrpcMessage: (msg: GrpcMessage) => void;
   clearGrpcMessages: () => void;
   setGrpcCallStatus: (status: GrpcCallStatus) => void;
@@ -144,6 +147,8 @@ export const useVartaStore = create<VartaState>((set, get) => ({
   grpcReflectionLoading: false,
   grpcLastLatencyMs: null,
   grpcConnectionId: null,
+  grpcResponseMetadata: {},
+  grpcResponseStatus: null,
 
   setIsNewReqSaveOpen: (open) => set({ isNewReqSaveOpen: open }),
   closeNewReqSave: () => set({ isNewReqSaveOpen: false }),
@@ -629,9 +634,17 @@ export const useVartaStore = create<VartaState>((set, get) => ({
   setGrpcSelectedMethod: (method) => set({ grpcSelectedMethod: method }),
   setGrpcRequestBody: (body) => set({ grpcRequestBody: body }),
   setGrpcMetadata: (rows) => set({ grpcMetadata: rows }),
+  setGrpcResponseMetadata: (metadata) =>
+    set({ grpcResponseMetadata: metadata }),
   addGrpcMessage: (msg) =>
     set((s) => ({ grpcMessages: [...s.grpcMessages, msg] })),
-  clearGrpcMessages: () => set({ grpcMessages: [], grpcLastLatencyMs: null }),
+  clearGrpcMessages: () =>
+    set({
+      grpcMessages: [],
+      grpcLastLatencyMs: null,
+      grpcResponseMetadata: {},
+      grpcResponseStatus: null,
+    }),
   setGrpcCallStatus: (status) => set({ grpcCallStatus: status }),
   setGrpcServices: (services) => set({ grpcServices: services }),
   setGrpcReflectionLoading: (loading) =>
@@ -665,6 +678,8 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       grpcMessages: [],
       grpcLastLatencyMs: null,
       grpcConnectionId: null,
+      grpcResponseMetadata: {},
+      grpcResponseStatus: null,
     });
 
     // Map the local stream type to the Rust GrpcMethodType enum
@@ -715,19 +730,31 @@ export const useVartaStore = create<VartaState>((set, get) => ({
           grpcConnectionId: connectionId || null,
           grpcCallStatus: "streaming",
           grpcLastLatencyMs: Number(response.timeMs),
+          grpcResponseMetadata: response.metadata || {},
+          grpcResponseStatus: {
+            code: response.status ?? 0,
+            text: response.statusText || "Streaming",
+          },
         });
       } else {
+        const isError = response.status !== 0;
         set({
-          grpcCallStatus: "ok",
+          grpcCallStatus: isError ? "error" : "ok",
           grpcLastLatencyMs: Number(response.timeMs),
+          grpcResponseMetadata: response.metadata || {},
+          grpcResponseStatus: {
+            code: response.status ?? 0,
+            text: response.statusText || "OK",
+          },
           grpcMessages: [
             {
               id: crypto.randomUUID(),
               direction: "received",
               data: response.message,
               timestamp: new Date().toISOString(),
-              statusCode: response.statusText || "OK",
+              statusCode: response.statusText || (isError ? "ERROR" : "OK"),
               latencyMs: Number(response.timeMs),
+              isError,
             },
           ],
         });
@@ -737,6 +764,7 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       set({
         grpcCallStatus: "error",
         grpcConnectionId: null,
+        grpcResponseStatus: { code: 2, text: "ERROR" },
         grpcMessages: [
           {
             id: crypto.randomUUID(),
@@ -781,7 +809,11 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         console.error("[gRPC] cancel error:", err);
       }
     }
-    set({ grpcCallStatus: "cancelled", grpcConnectionId: null });
+    set({
+      grpcCallStatus: "cancelled",
+      grpcConnectionId: null,
+      grpcResponseStatus: { code: 1, text: "CANCELLED" },
+    });
     setTimeout(() => set({ grpcCallStatus: "idle" }), 800);
   },
 
@@ -797,7 +829,9 @@ export const useVartaStore = create<VartaState>((set, get) => ({
 
       // Accept message if it matches active stream connection
       if (!grpcConnectionId || grpcConnectionId === connectionId) {
-        const isError = direction === "received" && message.startsWith("Error:");
+        const isError =
+          direction === "received" &&
+          (message.startsWith("Error:") || message.includes("gRPC Error"));
         get().addGrpcMessage({
           id: crypto.randomUUID(),
           connectionId,
@@ -810,26 +844,64 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       }
     });
 
+    const unlistenMeta = await listen<{
+      connectionId: string;
+      metadata: Record<string, string>;
+    }>("grpc://metadata", (event) => {
+      const { connectionId, metadata } = event.payload;
+      const { grpcConnectionId } = get();
+      if (!grpcConnectionId || grpcConnectionId === connectionId) {
+        set((s) => ({
+          grpcResponseMetadata: { ...s.grpcResponseMetadata, ...metadata },
+        }));
+      }
+    });
+
     const unlistenStatus = await listen<{
       connectionId: string;
       status: string;
       error?: string;
+      statusCode?: number;
+      statusText?: string;
+      metadata?: Record<string, string>;
     }>("grpc://status", (event) => {
-      const { connectionId, status } = event.payload;
+      const { connectionId, status, statusCode, statusText, metadata } =
+        event.payload;
       const { grpcConnectionId } = get();
       if (!grpcConnectionId || grpcConnectionId === connectionId) {
+        if (metadata && Object.keys(metadata).length > 0) {
+          set((s) => ({
+            grpcResponseMetadata: { ...s.grpcResponseMetadata, ...metadata },
+          }));
+        }
         if (status === "closed") {
-          set({ grpcCallStatus: "ok" });
+          set({
+            grpcCallStatus: "ok",
+            grpcResponseStatus: {
+              code: statusCode ?? 0,
+              text: statusText ?? "OK",
+            },
+          });
         } else if (status === "cancelled") {
-          set({ grpcCallStatus: "cancelled" });
+          set({
+            grpcCallStatus: "cancelled",
+            grpcResponseStatus: { code: 1, text: "CANCELLED" },
+          });
         } else if (status === "error") {
-          set({ grpcCallStatus: "error" });
+          set({
+            grpcCallStatus: "error",
+            grpcResponseStatus: {
+              code: statusCode ?? 2,
+              text: statusText ?? "ERROR",
+            },
+          });
         }
       }
     });
 
     return () => {
       unlistenMsg();
+      unlistenMeta();
       unlistenStatus();
     };
   },
@@ -851,11 +923,11 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         tabs: s.tabs.map((t) =>
           t.id === activeTabId
             ? {
-                ...t,
-                isSending: false,
-                response: undefined,
-                error: e,
-              }
+              ...t,
+              isSending: false,
+              response: undefined,
+              error: e,
+            }
             : t,
         ),
         grpcCallStatus: "error",
