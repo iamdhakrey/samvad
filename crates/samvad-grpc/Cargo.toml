@@ -13,7 +13,7 @@ protox = "0.9.1"
 serde_json = { workspace = true }
 http = "1.5.0"
 tonic-reflection = "0.14.6"
-tokio-stream = "0.1.19"
+tokio-stream = { version = "0.1.19", features = ["sync"] }
 samvad-error = {path= "../samvad-error"}
 hyper-util = "0.1.20"
 hyper-rustls = "0.27.9"
@@ -25,3 +25,4 @@ thiserror = "2.0.20"
 samvad-models = { version = "0.1.0", path = "../samvad-models" }
 tower = "0.5.3"
 tower-service = "0.3.3"
+tokio-util = "0.7.19"

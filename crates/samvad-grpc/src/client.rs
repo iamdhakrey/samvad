@@ -13,7 +13,10 @@ use samvad_error::AppError;
 use samvad_error::AppResult;
 use samvad_models::{GrpcMethod, GrpcService, GrpcStreamType};
 use std::{collections::BTreeMap, str::FromStr};
+use tokio::sync::mpsc;
 use tokio_stream::StreamExt as _;
+use tokio_stream::wrappers::ReceiverStream;
+use tokio_util::sync::CancellationToken;
 use tonic::Request;
 use tonic::body::Body;
 use tonic::metadata::{MetadataKey, MetadataValue};
@@ -516,4 +519,235 @@ pub async fn invoke_unary(
         .map_err(|e| AppError::GrpcError(format!("Failed to serialize response to JSON: {}", e)))?;
     // println!(" json res[p{:?}", json_resp);
     Ok(json_resp)
+}
+
+#[derive(Debug, Clone)]
+pub enum StreamEvent {
+    Message(String),
+    Error(String),
+    Closed,
+}
+
+pub struct GrpcStreamHandle {
+    pub outbound_tx: Option<mpsc::Sender<prost_reflect::DynamicMessage>>,
+    pub rx: mpsc::Receiver<StreamEvent>,
+}
+
+pub async fn start_grpc_stream(
+    cancel_token: CancellationToken,
+    uri_str: &str,
+    validate_certificates: bool,
+    method: prost_reflect::MethodDescriptor,
+    metadata: std::collections::BTreeMap<String, String>,
+    initial_payload: &str,
+) -> AppResult<GrpcStreamHandle> {
+    let normalized_uri = if uri_str.starts_with("http://") || uri_str.starts_with("https://") {
+        uri_str.to_string()
+    } else {
+        let scheme = if validate_certificates {
+            "https"
+        } else {
+            "http"
+        };
+        format!("{}://{}", scheme, uri_str)
+    };
+
+    let uri = normalized_uri
+        .parse::<http::Uri>()
+        .map_err(|e| AppError::GrpcError(format!("Invalid URI: {}", e)))?;
+    let mut transport = get_transport(validate_certificates)?;
+
+    let svc = tower::service_fn(move |mut req: http::Request<_>| {
+        let uri = uri.clone();
+        let path_and_query = req
+            .uri()
+            .path_and_query()
+            .map(|pq| pq.as_str())
+            .unwrap_or("");
+        let full_uri = format!(
+            "{}{}",
+            uri.to_string().trim_end_matches('/'),
+            path_and_query
+        )
+        .parse::<http::Uri>()
+        .unwrap();
+        *req.uri_mut() = full_uri;
+        transport.call(req)
+    });
+
+    let mut grpc = tonic::client::Grpc::new(svc);
+
+    let path_str = format!("/{}/{}", method.parent_service().full_name(), method.name());
+    let path = http::uri::PathAndQuery::try_from(path_str)
+        .map_err(|e| AppError::GrpcError(format!("Invalid method path: {}", e)))?;
+
+    let codec = DynamicCodec::new(method.clone());
+    grpc.ready()
+        .await
+        .map_err(|e| AppError::GrpcError(format!("Connection not ready: {}", e)))?;
+
+    let is_client_stream = method.is_client_streaming();
+    let is_server_stream = method.is_server_streaming();
+
+    let (event_tx, event_rx) = mpsc::channel(128);
+
+    if is_client_stream && is_server_stream {
+        // --- 1. Bidirectional Streaming ---
+        let (outbound_tx, outbound_rx) = mpsc::channel::<prost_reflect::DynamicMessage>(32);
+        let stream = ReceiverStream::new(outbound_rx);
+        let mut req = tonic::Request::new(stream);
+        let _ = decorate_req(&metadata, &mut req);
+
+        // Send initial message if provided
+        if !initial_payload.trim().is_empty() {
+            let mut deserializer = serde_json::Deserializer::from_str(initial_payload);
+            if let Ok(msg) =
+                serde::de::DeserializeSeed::deserialize(method.input(), &mut deserializer)
+            {
+                let _ = outbound_tx.send(msg).await;
+            }
+        }
+
+        let mut response_stream = grpc
+            .streaming(req, path, codec)
+            .await
+            .map_err(|e| {
+                AppError::GrpcError(format!("Bidirectional streaming call failed: {}", e))
+            })?
+            .into_inner();
+
+        let event_tx_clone = event_tx.clone();
+        tokio::spawn(async move {
+            loop {
+                tokio::select! {
+                    _ = cancel_token.cancelled() => {
+                        let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                        break;
+                    }
+                    msg_result = response_stream.message() => {
+                        match msg_result {
+                            Ok(Some(resp_msg)) => {
+                                let json_resp = serde_json::to_string(&resp_msg)
+                                    .unwrap_or_else(|e| format!(r#"{{"error": "serialization failed: {}"}}"#, e));
+
+                                if event_tx_clone.send(StreamEvent::Message(json_resp)).await.is_err() {
+                                    break;
+                                }
+                            }
+                            Ok(None) => {
+                                let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                                break;
+                            }
+                            Err(e) => {
+                                let _ = event_tx_clone.send(StreamEvent::Error(e.to_string())).await;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        Ok(GrpcStreamHandle {
+            outbound_tx: Some(outbound_tx),
+            rx: event_rx,
+        })
+    } else if is_client_stream {
+        // --- 2. Client Streaming ---
+        let (outbound_tx, outbound_rx) = mpsc::channel::<prost_reflect::DynamicMessage>(32);
+        let stream = ReceiverStream::new(outbound_rx);
+        let mut req = tonic::Request::new(stream);
+        let _ = decorate_req(&metadata, &mut req);
+
+        // Send initial message if provided
+        if !initial_payload.trim().is_empty() {
+            let mut deserializer = serde_json::Deserializer::from_str(initial_payload);
+            if let Ok(msg) =
+                serde::de::DeserializeSeed::deserialize(method.input(), &mut deserializer)
+            {
+                let _ = outbound_tx.send(msg).await;
+            }
+        }
+
+        let event_tx_clone = event_tx.clone();
+        tokio::spawn(async move {
+            tokio::select! {
+                _ = cancel_token.cancelled() => {
+                    let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                }
+                resp_result = grpc.client_streaming(req, path, codec) => {
+                    match resp_result {
+                        Ok(resp) => {
+                            let resp_msg = resp.into_inner();
+                            let json_resp = serde_json::to_string(&resp_msg)
+                                .unwrap_or_else(|e| format!(r#"{{"error": "serialization failed: {}"}}"#, e));
+                            let _ = event_tx_clone.send(StreamEvent::Message(json_resp)).await;
+                            let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                        }
+                        Err(e) => {
+                            let _ = event_tx_clone.send(StreamEvent::Error(e.to_string())).await;
+                        }
+                    }
+                }
+            }
+        });
+
+        Ok(GrpcStreamHandle {
+            outbound_tx: Some(outbound_tx),
+            rx: event_rx,
+        })
+    } else {
+        // --- 3. Server Streaming ---
+        let mut deserializer = serde_json::Deserializer::from_str(initial_payload);
+        let msg: prost_reflect::DynamicMessage =
+            serde::de::DeserializeSeed::deserialize(method.input(), &mut deserializer).map_err(
+                |e| AppError::GrpcError(format!("Failed to parse JSON message payload: {}", e)),
+            )?;
+
+        let mut req = tonic::Request::new(msg);
+        let _ = decorate_req(&metadata, &mut req);
+
+        let mut response_stream = grpc
+            .server_streaming(req, path, codec)
+            .await
+            .map_err(|e| AppError::GrpcError(format!("Server streaming call failed: {}", e)))?
+            .into_inner();
+
+        let event_tx_clone = event_tx.clone();
+        tokio::spawn(async move {
+            loop {
+                tokio::select! {
+                    _ = cancel_token.cancelled() => {
+                        let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                        break;
+                    }
+                    msg_result = response_stream.message() => {
+                        match msg_result {
+                            Ok(Some(resp_msg)) => {
+                                let json_resp = serde_json::to_string(&resp_msg)
+                                    .unwrap_or_else(|e| format!(r#"{{"error": "serialization failed: {}"}}"#, e));
+
+                                if event_tx_clone.send(StreamEvent::Message(json_resp)).await.is_err() {
+                                    break;
+                                }
+                            }
+                            Ok(None) => {
+                                let _ = event_tx_clone.send(StreamEvent::Closed).await;
+                                break;
+                            }
+                            Err(e) => {
+                                let _ = event_tx_clone.send(StreamEvent::Error(e.to_string())).await;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        Ok(GrpcStreamHandle {
+            outbound_tx: None,
+            rx: event_rx,
+        })
+    }
 }

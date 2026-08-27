@@ -80,9 +80,9 @@ interface VartaState {
   grpcMetadata: GrpcMetadataRow[];
   grpcReflectionLoading: boolean;
   grpcLastLatencyMs: number | null;
+  grpcConnectionId: string | null;
 
-  // ── gRPC actions (UI stubs — backend wired separately) ────────────────
-  // setGrpcServerAddress: (addr: string) => void;
+  // ── gRPC actions ────────────────
   setGrpcTlsEnabled: (enabled: boolean) => void;
   setGrpcSelectedService: (service: GrpcService | null) => void;
   setGrpcSelectedMethod: (method: GrpcMethod | null) => void;
@@ -94,8 +94,10 @@ interface VartaState {
   setGrpcServices: (services: GrpcService[]) => void;
   setGrpcReflectionLoading: (loading: boolean) => void;
   invokeGrpc: () => Promise<void>;
+  sendGrpcMessage: (msg: string) => Promise<void>;
   cancelGrpcCall: () => Promise<void>;
   loadGrpcReflection: () => Promise<void>;
+  initGrpcListener: () => Promise<UnlistenFn>;
 }
 
 let tabCounter = 0;
@@ -141,6 +143,7 @@ export const useVartaStore = create<VartaState>((set, get) => ({
   grpcMetadata: [{ id: "m1", key: "", value: "", enabled: true }],
   grpcReflectionLoading: false,
   grpcLastLatencyMs: null,
+  grpcConnectionId: null,
 
   setIsNewReqSaveOpen: (open) => set({ isNewReqSaveOpen: open }),
   closeNewReqSave: () => set({ isNewReqSaveOpen: false }),
@@ -652,10 +655,16 @@ export const useVartaStore = create<VartaState>((set, get) => ({
     )
       return;
 
+    const isStreaming =
+      grpcSelectedMethod.streamType === "server_stream" ||
+      grpcSelectedMethod.streamType === "client_stream" ||
+      grpcSelectedMethod.streamType === "bidi_stream";
+
     set({
-      grpcCallStatus: "invoking",
+      grpcCallStatus: isStreaming ? "streaming" : "invoking",
       grpcMessages: [],
       grpcLastLatencyMs: null,
+      grpcConnectionId: null,
     });
 
     // Map the local stream type to the Rust GrpcMethodType enum
@@ -683,26 +692,51 @@ export const useVartaStore = create<VartaState>((set, get) => ({
         protoFileIds: [],
       };
 
+      // If client streaming or bidi streaming and an initial message is provided, log it as sent
+      if (
+        (grpcSelectedMethod.streamType === "client_stream" ||
+          grpcSelectedMethod.streamType === "bidi_stream") &&
+        grpcRequestBody.trim() &&
+        grpcRequestBody.trim() !== "{}"
+      ) {
+        get().addGrpcMessage({
+          id: crypto.randomUUID(),
+          direction: "sent",
+          data: grpcRequestBody,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
       const response = await invoke<any>("grpc_invoke", { request });
 
-      set({
-        grpcCallStatus: "ok",
-        grpcLastLatencyMs: Number(response.timeMs),
-        grpcMessages: [
-          {
-            id: crypto.randomUUID(),
-            direction: "received",
-            data: response.message,
-            timestamp: new Date().toISOString(),
-            statusCode: response.statusText || "OK",
-            latencyMs: Number(response.timeMs),
-          },
-        ],
-      });
+      if (isStreaming) {
+        const connectionId = response.metadata?.["x-samvad-connection-id"];
+        set({
+          grpcConnectionId: connectionId || null,
+          grpcCallStatus: "streaming",
+          grpcLastLatencyMs: Number(response.timeMs),
+        });
+      } else {
+        set({
+          grpcCallStatus: "ok",
+          grpcLastLatencyMs: Number(response.timeMs),
+          grpcMessages: [
+            {
+              id: crypto.randomUUID(),
+              direction: "received",
+              data: response.message,
+              timestamp: new Date().toISOString(),
+              statusCode: response.statusText || "OK",
+              latencyMs: Number(response.timeMs),
+            },
+          ],
+        });
+      }
     } catch (e: any) {
       console.error("[gRPC] invokeGrpc error:", e);
       set({
         grpcCallStatus: "error",
+        grpcConnectionId: null,
         grpcMessages: [
           {
             id: crypto.randomUUID(),
@@ -714,20 +748,94 @@ export const useVartaStore = create<VartaState>((set, get) => ({
           },
         ],
       });
-      console.log("gprrc mes", get().grpcMessages)
+    }
+  },
+
+  sendGrpcMessage: async (msg: string) => {
+    const { grpcConnectionId } = get();
+    if (!grpcConnectionId) return;
+    try {
+      await invoke("grpc_send_message", {
+        connectionId: grpcConnectionId,
+        message: msg,
+      });
+    } catch (err: any) {
+      console.error("[gRPC] sendGrpcMessage error:", err);
+      get().addGrpcMessage({
+        id: crypto.randomUUID(),
+        direction: "received",
+        data: `Error sending message: ${err}`,
+        timestamp: new Date().toISOString(),
+        isError: true,
+        statusCode: "ERROR",
+      });
     }
   },
 
   cancelGrpcCall: async () => {
-    set({ grpcCallStatus: "cancelled" });
-    // TODO: wire streaming backend cancel
-    console.log("[gRPC] cancelGrpcCall — streaming backend not yet wired");
+    const { grpcConnectionId } = get();
+    if (grpcConnectionId) {
+      try {
+        await invoke("grpc_cancel", { connectionId: grpcConnectionId });
+      } catch (err) {
+        console.error("[gRPC] cancel error:", err);
+      }
+    }
+    set({ grpcCallStatus: "cancelled", grpcConnectionId: null });
     setTimeout(() => set({ grpcCallStatus: "idle" }), 800);
+  },
+
+  initGrpcListener: async () => {
+    const unlistenMsg = await listen<{
+      connectionId: string;
+      direction: string;
+      message: string;
+      timestamp: string;
+    }>("grpc://message", (event) => {
+      const { connectionId, direction, message, timestamp } = event.payload;
+      const { grpcConnectionId } = get();
+
+      // Accept message if it matches active stream connection
+      if (!grpcConnectionId || grpcConnectionId === connectionId) {
+        const isError = direction === "received" && message.startsWith("Error:");
+        get().addGrpcMessage({
+          id: crypto.randomUUID(),
+          connectionId,
+          direction: direction as "sent" | "received" | "closed",
+          data: message,
+          timestamp: timestamp || new Date().toISOString(),
+          isError,
+          statusCode: isError ? "ERROR" : undefined,
+        });
+      }
+    });
+
+    const unlistenStatus = await listen<{
+      connectionId: string;
+      status: string;
+      error?: string;
+    }>("grpc://status", (event) => {
+      const { connectionId, status } = event.payload;
+      const { grpcConnectionId } = get();
+      if (!grpcConnectionId || grpcConnectionId === connectionId) {
+        if (status === "closed") {
+          set({ grpcCallStatus: "ok" });
+        } else if (status === "cancelled") {
+          set({ grpcCallStatus: "cancelled" });
+        } else if (status === "error") {
+          set({ grpcCallStatus: "error" });
+        }
+      }
+    });
+
+    return () => {
+      unlistenMsg();
+      unlistenStatus();
+    };
   },
 
   loadGrpcReflection: async () => {
     const { activeTab, activeTabId } = get();
-    // const { tabs, activeTabId } = get();
     const grpcServerAddress = activeTab?.request.url;
     if (!grpcServerAddress) return;
     set({ grpcReflectionLoading: true, grpcServices: [] });
@@ -739,16 +847,15 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       set({ grpcServices: services, grpcCallStatus: "idle", grpcMessages: [] });
     } catch (e: any) {
       console.error("[gRPC] loadGrpcReflection error:", e);
-      // set({ grpcReflectionLoading: false, activeTab?.error: e });
       set((s) => ({
         tabs: s.tabs.map((t) =>
           t.id === activeTabId
             ? {
-              ...t,
-              isSending: false,
-              response: undefined,
-              error: e,
-            }
+                ...t,
+                isSending: false,
+                response: undefined,
+                error: e,
+              }
             : t,
         ),
         grpcCallStatus: "error",
@@ -763,8 +870,6 @@ export const useVartaStore = create<VartaState>((set, get) => ({
           },
         ],
       }));
-
-      // Optional: Maybe show an error toast
     } finally {
       set({ grpcReflectionLoading: false });
     }

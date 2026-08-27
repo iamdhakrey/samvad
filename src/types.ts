@@ -173,7 +173,8 @@ export type GrpcCallStatus =
 
 export interface GrpcMessage {
   id: string;
-  direction: "sent" | "received";
+  connectionId?: string;
+  direction: "sent" | "received" | "closed";
   data: string; // JSON-stringified proto message
   timestamp: string;
   statusCode?: string; // gRPC status code label e.g. "OK", "UNAVAILABLE"

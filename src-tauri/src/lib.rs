@@ -78,6 +78,7 @@ pub fn run() {
             app_handle.manage(AppState {
                 data_dir,
                 ws_connections: Default::default(),
+                grpc_streams: Default::default(),
             });
 
             app_handle.manage::<PkceSessionState>(Arc::new(Mutex::new(None)));

@@ -11,6 +11,7 @@ import {
   Loader2,
   Radio,
   AlertCircle,
+  Square,
 } from "lucide-react";
 import { useVartaStore } from "../../store/vartaStore";
 import { GrpcCallStatus, GrpcMessage } from "../../types";
@@ -72,8 +73,11 @@ export default function GrpcResponsePanel({
   const callStatus = useVartaStore((s) => s.grpcCallStatus);
   const lastLatency = useVartaStore((s) => s.grpcLastLatencyMs);
   const clearMessages = useVartaStore((s) => s.clearGrpcMessages);
+  const cancelGrpcCall = useVartaStore((s) => s.cancelGrpcCall);
 
   const logEndRef = useRef<HTMLDivElement>(null);
+
+  const isStreaming = callStatus === "streaming";
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -82,7 +86,7 @@ export default function GrpcResponsePanel({
 
   const statusCfg = STATUS_CONFIG[callStatus];
 
-  // 2. Error view state
+  // Error view state
   if (error) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
@@ -101,8 +105,9 @@ export default function GrpcResponsePanel({
     <div className="flex h-full flex-col">
       {/* Status bar */}
       <div
-        className={`flex items-center gap-3 border-b border-border bg-panel text-sm ${isMobile ? "px-3 py-2" : "px-4 py-2"
-          }`}
+        className={`flex items-center gap-3 border-b border-border bg-panel text-sm ${
+          isMobile ? "px-3 py-2" : "px-4 py-2"
+        }`}
       >
         {/* Status indicator */}
         <div className="flex items-center gap-2">
@@ -132,10 +137,21 @@ export default function GrpcResponsePanel({
 
         {/* Actions */}
         <div className="ml-auto flex items-center gap-1.5">
+          {isStreaming && (
+            <button
+              onClick={cancelGrpcCall}
+              className="flex items-center gap-1.5 rounded-md bg-error/20 border border-error/40 px-2.5 py-1 text-xs text-error hover:bg-error hover:text-white transition-colors cursor-pointer"
+              title="Stop active stream"
+            >
+              <Square size={11} fill="currentColor" />
+              Stop Stream
+            </button>
+          )}
+
           {messages.length > 0 && (
             <button
               onClick={clearMessages}
-              className="flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-text-secondary hover:bg-panel-raised hover:text-text-primary transition-colors"
+              className="flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-text-secondary hover:bg-panel-raised hover:text-text-primary transition-colors cursor-pointer"
               title="Clear messages"
             >
               <Trash2 size={12} />
@@ -147,8 +163,9 @@ export default function GrpcResponsePanel({
 
       {/* Messages tab header */}
       <div
-        className={`flex gap-1 border-b border-border ${isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
-          }`}
+        className={`flex gap-1 border-b border-border ${
+          isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
+        }`}
       >
         <button className="tab-trigger shrink-0 tab-trigger-active">
           Messages
@@ -162,8 +179,9 @@ export default function GrpcResponsePanel({
 
       {/* Message log */}
       <div
-        className={`flex-1 overflow-y-auto ${isMobile ? "px-3 py-2" : "px-4 py-3"
-          }`}
+        className={`flex-1 overflow-y-auto ${
+          isMobile ? "px-3 py-2" : "px-4 py-3"
+        }`}
       >
         {messages.length === 0 ? (
           <EmptyState callStatus={callStatus} />
@@ -195,7 +213,7 @@ function EmptyState({ callStatus }: { callStatus: GrpcCallStatus }) {
             <div className="h-2 w-2 rounded-full bg-warning animate-pulse [animation-delay:300ms]" />
           </div>
           <span className="text-sm text-text-secondary">
-            Waiting for response…
+            Waiting for stream messages…
           </span>
         </>
       ) : (
@@ -206,7 +224,7 @@ function EmptyState({ callStatus }: { callStatus: GrpcCallStatus }) {
           <span className="text-sm text-text-muted">
             Select a service & method, then click{" "}
             <strong className="text-text-secondary">Invoke</strong> to see
-            responses here.
+            streaming messages here.
           </span>
         </>
       )}
@@ -240,12 +258,13 @@ function MessageRow({
 
   return (
     <div
-      className={`group flex gap-2 rounded-md border px-3 py-2 text-sm font-mono transition-colors ${isSent
-        ? "border-primary/20 bg-primary/5"
-        : msg.isError
-          ? "border-error/20 bg-error/5"
-          : "border-success/20 bg-success/5"
-        }`}
+      className={`group flex gap-2 rounded-md border px-3 py-2 text-sm font-mono transition-colors ${
+        isSent
+          ? "border-primary/30 bg-primary/5"
+          : msg.isError
+            ? "border-error/30 bg-error/5"
+            : "border-success/30 bg-success/5"
+      }`}
     >
       {/* Direction icon */}
       <div className="shrink-0 pt-0.5">
@@ -260,19 +279,26 @@ function MessageRow({
 
       {/* Content */}
       <div className="min-w-0 flex-1">
-        {/* Status code badge */}
-        {msg.statusCode && (
-          <div className="mb-1">
-            <span
-              className={`inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${msg.statusCode === "OK"
-                ? "bg-success/20 text-success"
-                : "bg-error/20 text-error"
-                }`}
-            >
+        {/* Status / Direction badge */}
+        <div className="mb-1 flex items-center gap-1.5">
+          <span
+            className={`inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${
+              isSent
+                ? "bg-primary/20 text-primary"
+                : msg.isError
+                  ? "bg-error/20 text-error"
+                  : "bg-success/20 text-success"
+            }`}
+          >
+            {isSent ? "Sent" : msg.isError ? "Error" : "Received"}
+          </span>
+
+          {msg.statusCode && msg.statusCode !== "OK" && (
+            <span className="inline-flex items-center rounded bg-panel px-1.5 py-0.5 text-[9px] font-mono text-text-muted">
               {msg.statusCode}
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
         {displayContent && (
           <pre className="whitespace-pre-wrap break-all text-text-primary text-xs">
@@ -294,11 +320,12 @@ function MessageRow({
           </span>
         )}
 
-        {/* Copy button — visible on hover */}
+        {/* Copy button */}
         <button
           onClick={handleCopy}
-          className={`rounded p-0.5 text-text-muted hover:text-text-primary hover:bg-panel-raised transition-colors ${isMobile ? "" : "opacity-0 group-hover:opacity-100"
-            }`}
+          className={`rounded p-0.5 text-text-muted hover:text-text-primary hover:bg-panel-raised transition-colors cursor-pointer ${
+            isMobile ? "" : "opacity-0 group-hover:opacity-100"
+          }`}
           title="Copy message"
         >
           <Copy size={11} />

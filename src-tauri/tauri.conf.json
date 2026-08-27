@@ -16,7 +16,7 @@
         "title": "Samvad",
         "width": 1200,
         "height": 800,
-        "decorations": true,
+        "decorations": false,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
         "transparent": true
