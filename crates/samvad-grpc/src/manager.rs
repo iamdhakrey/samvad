@@ -1,7 +1,7 @@
 use prost_reflect::{DynamicMessage, MessageDescriptor};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{RwLock, mpsc};
 use tokio_util::sync::CancellationToken;
 
 pub struct GrpcActiveStream {

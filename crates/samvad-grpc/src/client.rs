@@ -14,8 +14,8 @@ use samvad_error::AppResult;
 use samvad_models::{GrpcMethod, GrpcService, GrpcStreamType};
 use std::{collections::BTreeMap, str::FromStr};
 use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt as _;
+use tokio_stream::wrappers::ReceiverStream;
 use tokio_util::sync::CancellationToken;
 use tonic::Request;
 use tonic::body::Body;
@@ -601,7 +601,9 @@ pub async fn start_grpc_stream(
         // Send initial message if provided
         if !initial_payload.trim().is_empty() {
             let mut deserializer = serde_json::Deserializer::from_str(initial_payload);
-            if let Ok(msg) = serde::de::DeserializeSeed::deserialize(method.input(), &mut deserializer) {
+            if let Ok(msg) =
+                serde::de::DeserializeSeed::deserialize(method.input(), &mut deserializer)
+            {
                 let _ = outbound_tx.send(msg).await;
             }
         }
@@ -609,7 +611,9 @@ pub async fn start_grpc_stream(
         let mut response_stream = grpc
             .streaming(req, path, codec)
             .await
-            .map_err(|e| AppError::GrpcError(format!("Bidirectional streaming call failed: {}", e)))?
+            .map_err(|e| {
+                AppError::GrpcError(format!("Bidirectional streaming call failed: {}", e))
+            })?
             .into_inner();
 
         let event_tx_clone = event_tx.clone();
@@ -658,7 +662,9 @@ pub async fn start_grpc_stream(
         // Send initial message if provided
         if !initial_payload.trim().is_empty() {
             let mut deserializer = serde_json::Deserializer::from_str(initial_payload);
-            if let Ok(msg) = serde::de::DeserializeSeed::deserialize(method.input(), &mut deserializer) {
+            if let Ok(msg) =
+                serde::de::DeserializeSeed::deserialize(method.input(), &mut deserializer)
+            {
                 let _ = outbound_tx.send(msg).await;
             }
         }
@@ -745,4 +751,3 @@ pub async fn start_grpc_stream(
         })
     }
 }
-
