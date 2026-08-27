@@ -1,7 +1,7 @@
 {
   "name": "Samvad",
   "private": true,
-  "version": "0.3.2",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "tauri": "tauri"
   },
-  "workspaces": ["crates/samvad-models"],
+  "workspaces": [
+    "crates/samvad-models"
+  ],
   "dependencies": {
     "@fabianlars/tauri-plugin-oauth": "2",
     "@monaco-editor/react": "^4.7.0",
