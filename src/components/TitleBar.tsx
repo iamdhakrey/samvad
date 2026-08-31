@@ -9,11 +9,13 @@ import {
   ChevronDown,
   Layers,
   Library,
+  Cloud,
   Plus,
   Edit2,
   Trash2,
   Check,
   Loader2,
+  SlidersHorizontal,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useVartaStore } from "../store/vartaStore";
@@ -29,6 +31,7 @@ export default function Titlebar() {
   const [isMaximized, setIsMaximized] = useState(false);
   const activeTab = useVartaStore((s) => s.activeTab);
   const toggleCommandPalette = useVartaStore((s) => s.toggleCommandPalette);
+  const openEnvEditor = useVartaStore((s) => s.openEnvEditor);
 
   // Store states
   const {
@@ -48,6 +51,14 @@ export default function Titlebar() {
     renameCollection,
     deleteCollection,
     isLoadingCollections,
+
+    environments,
+    activeEnvironmentId,
+    fetchEnvironments,
+    setActiveEnvironment,
+    renameEnvironment,
+    deleteEnvironment,
+    createEnvironment,
   } = useWorkspaceStore();
 
   // Workspace Dropdown States
@@ -64,6 +75,13 @@ export default function Titlebar() {
   const [colInputValue, setColInputValue] = useState("");
   const colDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Environment DropDown States
+  const envDropdownRef = useRef<HTMLDivElement>(null);
+  const [isEnvOpen, setIsEnvOpen] = useState(false);
+  const [isCreatingEnv, setIsCreatingEnv] = useState(false);
+  const [editingEnvId, setEditingEnvId] = useState<string | null>(null);
+  const [envInputValue, setEnvInputValue] = useState("");
+
   useEffect(() => {
     fetchWorkspaces();
     getActiveState();
@@ -72,8 +90,9 @@ export default function Titlebar() {
   useEffect(() => {
     if (activeWorkspaceId) {
       fetchCollections();
+      fetchEnvironments(activeWorkspaceId);
     }
-  }, [activeWorkspaceId, fetchCollections]);
+  }, [activeWorkspaceId, fetchCollections, fetchEnvironments]);
 
   useEffect(() => {
     const unlisten = appWindow.onResized(async () => {
@@ -103,6 +122,14 @@ export default function Titlebar() {
         setIsCreatingCol(false);
         setEditingColId(null);
       }
+      if (
+        envDropdownRef.current &&
+        !envDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsEnvOpen(false);
+        setIsCreatingEnv(false);
+        setEditingEnvId(null);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -110,6 +137,9 @@ export default function Titlebar() {
 
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
   const activeCollection = collections.find((c) => c.id === activeCollectionId);
+  const activeEnv = environments.find(
+    (e) => e.environment.id === activeEnvironmentId,
+  );
 
   const handleCreateWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,13 +177,37 @@ export default function Titlebar() {
     }
   };
 
+  const handleCreateEnvironment = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!activeWorkspaceId) {
+      console.warn("Cannot create environment: No active workspace selected.");
+      return;
+    }
+
+    if (envInputValue.trim()) {
+      await createEnvironment(activeWorkspaceId, envInputValue.trim());
+      setEnvInputValue("");
+      setIsCreatingEnv(false);
+    }
+  };
+
+  const handleRenameEnvironment = async (e: React.FormEvent, id: string) => {
+    e.preventDefault();
+    if (envInputValue.trim()) {
+      await renameEnvironment(id, envInputValue.trim());
+      setEnvInputValue("");
+      setEditingEnvId(null);
+    }
+  };
+
   return (
     <header
       data-tauri-drag-region
       className={`relative z-50 flex h-10 w-full select-none items-center justify-between border-b border-border/40 bg-panel/85 px-3 backdrop-blur-md ${isMac ? "pl-[78px]" : "pl-3"
         }`}
     >
-      {/* ── Left Section: Workspace & Collection Selector Breadcrumb ── */}
+      {/* ── Left Section: Workspace, Collection & Environment Selector Breadcrumb ── */}
       <div className="flex items-center gap-1.5" data-tauri-drag-region>
         {!isMac && (
           <img
@@ -169,6 +223,7 @@ export default function Titlebar() {
             onClick={() => {
               setIsWsOpen(!isWsOpen);
               setIsColOpen(false);
+              setIsEnvOpen(false);
             }}
             className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-panel transition-colors cursor-pointer"
             title="Switch Workspace"
@@ -198,8 +253,8 @@ export default function Titlebar() {
                     <div
                       key={ws.id}
                       className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${ws.id === activeWorkspaceId
-                          ? "bg-panel/60 text-text-primary font-medium"
-                          : ""
+                        ? "bg-panel/60 text-text-primary font-medium"
+                        : ""
                         }`}
                     >
                       {editingWsId === ws.id ? (
@@ -331,6 +386,7 @@ export default function Titlebar() {
             onClick={() => {
               setIsColOpen(!isColOpen);
               setIsWsOpen(false);
+              setIsEnvOpen(false);
             }}
             className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-panel transition-colors cursor-pointer"
             title="Switch Collection"
@@ -367,8 +423,8 @@ export default function Titlebar() {
                     <div
                       key={col.id}
                       className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${col.id === activeCollectionId
-                          ? "bg-panel/60 text-text-primary font-medium"
-                          : ""
+                        ? "bg-panel/60 text-text-primary font-medium"
+                        : ""
                         }`}
                     >
                       {editingColId === col.id ? (
@@ -490,6 +546,206 @@ export default function Titlebar() {
             </div>
           )}
         </div>
+
+        {/* Separator */}
+        <ChevronRight className="w-3 h-3 text-text-muted/50 shrink-0" />
+
+        {/* 3. Environment Selector Popover */}
+        <div className="relative" ref={envDropdownRef}>
+          <button
+            onClick={() => {
+              setIsEnvOpen(!isEnvOpen);
+              setIsWsOpen(false);
+              setIsColOpen(false);
+            }}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-panel transition-colors cursor-pointer"
+            title="Switch Environment"
+          >
+            <Cloud className="w-3.5 h-3.5 text-primary/80 shrink-0" />
+            <span className="truncate max-w-[120px]">
+              {activeEnv?.environment.name || "No Environment"}
+            </span>
+            <ChevronDown
+              className={`w-3 h-3 text-text-muted transition-transform duration-150 ${isEnvOpen ? "rotate-180" : ""
+                }`}
+            />
+          </button>
+
+          {isEnvOpen && (
+            <div className="absolute left-0 top-full mt-1 w-60 z-50 rounded-lg bg-panel-raised border border-border shadow-elevated overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+              <div className="px-2.5 py-1.5 text-[11px] font-semibold text-text-muted border-b border-border/40 uppercase tracking-wider">
+                Environments
+              </div>
+              <div className="max-h-56 overflow-y-auto py-1">
+                {/* "No Environment" Option */}
+                <button
+                  onClick={() => {
+                    setActiveEnvironment(null);
+                    setIsEnvOpen(false);
+                  }}
+                  className={`group flex items-center gap-2 px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-left cursor-pointer transition-all duration-150 ${!activeEnvironmentId
+                    ? "bg-panel/60 text-text-primary font-medium"
+                    : "text-text-secondary hover:bg-panel hover:text-text-primary"
+                    }`}
+                  style={{ width: "calc(100% - 8px)" }}
+                >
+                  <div className="w-3.5 flex justify-center shrink-0">
+                    {!activeEnvironmentId && (
+                      <Check className="w-3.5 h-3.5 text-primary" />
+                    )}
+                  </div>
+                  <span className="truncate">No Environment</span>
+                </button>
+
+                {/* Environment List */}
+                {environments.map((env) => (
+                  <div
+                    key={env.environment.id}
+                    className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${env.environment.id === activeEnvironmentId
+                      ? "bg-panel/60 text-text-primary font-medium"
+                      : ""
+                      }`}
+                  >
+                    {editingEnvId === env.environment.id ? (
+                      <form
+                        onSubmit={(e) =>
+                          handleRenameEnvironment(e, env.environment.id)
+                        }
+                        className="flex items-center gap-1 w-full"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="text"
+                          autoFocus
+                          value={envInputValue}
+                          onChange={(e) => setEnvInputValue(e.target.value)}
+                          className="input-shell w-full py-0.5 px-2 text-xs"
+                        />
+                        <button
+                          type="submit"
+                          className="p-1 hover:text-success cursor-pointer"
+                          title="Save"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingEnvId(null)}
+                          className="p-1 hover:text-error cursor-pointer"
+                          title="Cancel"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </form>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => {
+                            setActiveEnvironment(env.environment.id);
+                            setIsEnvOpen(false);
+                          }}
+                          className="flex items-center gap-2 flex-1 text-left truncate cursor-pointer py-0.5"
+                        >
+                          {env.environment.id === activeEnvironmentId ? (
+                            <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                          ) : (
+                            <Cloud className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                          )}
+                          <span className="truncate">
+                            {env.environment.name}
+                          </span>
+                        </button>
+
+                        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveEnvironment(env.environment.id);
+                              openEnvEditor();
+                              setIsEnvOpen(false);
+                            }}
+                            className="p-1 rounded text-text-muted hover:text-text-primary hover:bg-borderMuted cursor-pointer"
+                            title="Edit Variables"
+                          >
+                            <SlidersHorizontal className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingEnvId(env.environment.id);
+                              setEnvInputValue(env.environment.name);
+                            }}
+                            className="p-1 rounded text-text-muted hover:text-text-primary hover:bg-borderMuted cursor-pointer"
+                            title="Rename Environment"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteEnvironment(env.environment.id);
+                            }}
+                            className="p-1 rounded text-text-muted hover:text-error hover:bg-error/10 cursor-pointer"
+                            title="Delete Environment"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Add Env / Manage Env Footer */}
+              <div className="border-t border-border/40 bg-panel/40 p-1.5 flex flex-col gap-1">
+                {isCreatingEnv ? (
+                  <form
+                    onSubmit={handleCreateEnvironment}
+                    className="flex items-center gap-1"
+                  >
+                    <input
+                      type="text"
+                      autoFocus
+                      placeholder="Environment name..."
+                      value={envInputValue}
+                      onChange={(e) => setEnvInputValue(e.target.value)}
+                      className="input-shell w-full py-0.5 px-2 text-xs"
+                    />
+                    <button
+                      type="submit"
+                      className="p-1 bg-primary hover:bg-primary-hover text-white rounded cursor-pointer"
+                      title="Create"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingEnv(false)}
+                      className="p-1 bg-panel border border-border text-text-secondary hover:text-text-primary rounded cursor-pointer"
+                      title="Cancel"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsCreatingEnv(true);
+                        setEnvInputValue("");
+                      }}
+                      className="flex items-center justify-center gap-1.5 w-full py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-panel rounded border border-dashed border-border transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Create Environment
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Center Section: Antigravity Command Pill ── */}
@@ -532,7 +788,6 @@ export default function Titlebar() {
 
         {/* Divider */}
         <div className="h-3.5 w-px bg-border/40" />
-
 
         {/* Windows / Linux Controls */}
         {!isMac && (
