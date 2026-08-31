@@ -1,8 +1,5 @@
-import { useEffect } from "react";
 import { Settings, X } from "lucide-react";
 import { CollectionsTree } from "./CollectionTree";
-import { EnvironmentSelector } from "./EnvironmentSelector";
-import { useWorkspaceStore } from "../../store/workspaceStore";
 import { useSettingsStore } from "../../store/settingStore";
 
 interface SidebarProps {
@@ -11,17 +8,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isMobile, onClose }: SidebarProps) {
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const fetchEnvironments = useWorkspaceStore((s) => s.fetchEnvironments);
-
   const setSettingsOpen = useSettingsStore((s) => s.setSettingsOpen);
-
-  // Fetch environments when the active workspace changes
-  useEffect(() => {
-    if (activeWorkspaceId) {
-      fetchEnvironments(activeWorkspaceId);
-    }
-  }, [activeWorkspaceId, fetchEnvironments]);
 
   const handleSettings = () => {
     setSettingsOpen(true);
@@ -30,8 +17,9 @@ export default function Sidebar({ isMobile, onClose }: SidebarProps) {
 
   return (
     <aside
-      className={`flex h-full shrink-0 flex-col border-r border-border bg-bg ${isMobile ? "w-[85vw] max-w-[320px]" : "w-70"
-        }`}
+      className={`flex h-full shrink-0 flex-col border-r border-border bg-bg ${
+        isMobile ? "w-[85vw] max-w-[320px]" : "w-70"
+      }`}
     >
       {/* Mobile close header */}
       {isMobile && (
@@ -49,15 +37,8 @@ export default function Sidebar({ isMobile, onClose }: SidebarProps) {
         </div>
       )}
 
-
       {/* Collections tree */}
       <CollectionsTree />
-
-      {/* Environment + actions */}
-      <div className="border-t border-border p-3">
-        {/* <-- Custom Dropdown replaces native select --> */}
-        <EnvironmentSelector />
-      </div>
 
       {/* FOOTER - Stacked Buttons */}
       <div className="flex flex-col gap-1 border-t border-border p-2">
