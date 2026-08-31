@@ -16,7 +16,6 @@ import {
   Check,
   Loader2,
   SlidersHorizontal,
-  Settings,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useVartaStore } from "../store/vartaStore";
@@ -205,9 +204,8 @@ export default function Titlebar() {
   return (
     <header
       data-tauri-drag-region
-      className={`relative z-50 flex h-10 w-full select-none items-center justify-between border-b border-border/40 bg-panel/85 px-3 backdrop-blur-md ${
-        isMac ? "pl-[78px]" : "pl-3"
-      }`}
+      className={`relative z-50 flex h-10 w-full select-none items-center justify-between border-b border-border/40 bg-panel/85 px-3 backdrop-blur-md ${isMac ? "pl-[78px]" : "pl-3"
+        }`}
     >
       {/* ── Left Section: Workspace, Collection & Environment Selector Breadcrumb ── */}
       <div className="flex items-center gap-1.5" data-tauri-drag-region>
@@ -235,9 +233,8 @@ export default function Titlebar() {
               {activeWorkspace?.name || "Workspace"}
             </span>
             <ChevronDown
-              className={`w-3 h-3 text-text-muted transition-transform duration-150 ${
-                isWsOpen ? "rotate-180" : ""
-              }`}
+              className={`w-3 h-3 text-text-muted transition-transform duration-150 ${isWsOpen ? "rotate-180" : ""
+                }`}
             />
           </button>
 
@@ -255,11 +252,10 @@ export default function Titlebar() {
                   workspaces.map((ws) => (
                     <div
                       key={ws.id}
-                      className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${
-                        ws.id === activeWorkspaceId
-                          ? "bg-panel/60 text-text-primary font-medium"
-                          : ""
-                      }`}
+                      className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${ws.id === activeWorkspaceId
+                        ? "bg-panel/60 text-text-primary font-medium"
+                        : ""
+                        }`}
                     >
                       {editingWsId === ws.id ? (
                         <form
@@ -406,9 +402,8 @@ export default function Titlebar() {
               <Loader2 className="w-3 h-3 animate-spin text-text-muted shrink-0" />
             ) : (
               <ChevronDown
-                className={`w-3 h-3 text-text-muted transition-transform duration-150 ${
-                  isColOpen ? "rotate-180" : ""
-                }`}
+                className={`w-3 h-3 text-text-muted transition-transform duration-150 ${isColOpen ? "rotate-180" : ""
+                  }`}
               />
             )}
           </button>
@@ -427,11 +422,10 @@ export default function Titlebar() {
                   collections.map((col) => (
                     <div
                       key={col.id}
-                      className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${
-                        col.id === activeCollectionId
-                          ? "bg-panel/60 text-text-primary font-medium"
-                          : ""
-                      }`}
+                      className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${col.id === activeCollectionId
+                        ? "bg-panel/60 text-text-primary font-medium"
+                        : ""
+                        }`}
                     >
                       {editingColId === col.id ? (
                         <form
@@ -572,9 +566,8 @@ export default function Titlebar() {
               {activeEnv?.environment.name || "No Environment"}
             </span>
             <ChevronDown
-              className={`w-3 h-3 text-text-muted transition-transform duration-150 ${
-                isEnvOpen ? "rotate-180" : ""
-              }`}
+              className={`w-3 h-3 text-text-muted transition-transform duration-150 ${isEnvOpen ? "rotate-180" : ""
+                }`}
             />
           </button>
 
@@ -590,11 +583,10 @@ export default function Titlebar() {
                     setActiveEnvironment(null);
                     setIsEnvOpen(false);
                   }}
-                  className={`group flex items-center gap-2 px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-left cursor-pointer transition-all duration-150 ${
-                    !activeEnvironmentId
-                      ? "bg-panel/60 text-text-primary font-medium"
-                      : "text-text-secondary hover:bg-panel hover:text-text-primary"
-                  }`}
+                  className={`group flex items-center gap-2 px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-left cursor-pointer transition-all duration-150 ${!activeEnvironmentId
+                    ? "bg-panel/60 text-text-primary font-medium"
+                    : "text-text-secondary hover:bg-panel hover:text-text-primary"
+                    }`}
                   style={{ width: "calc(100% - 8px)" }}
                 >
                   <div className="w-3.5 flex justify-center shrink-0">
@@ -609,11 +601,10 @@ export default function Titlebar() {
                 {environments.map((env) => (
                   <div
                     key={env.environment.id}
-                    className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${
-                      env.environment.id === activeEnvironmentId
-                        ? "bg-panel/60 text-text-primary font-medium"
-                        : ""
-                    }`}
+                    className={`group flex items-center justify-between px-2.5 py-1.5 mx-1 my-0.5 rounded-md text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all duration-150 ${env.environment.id === activeEnvironmentId
+                      ? "bg-panel/60 text-text-primary font-medium"
+                      : ""
+                      }`}
                   >
                     {editingEnvId === env.environment.id ? (
                       <form
@@ -748,16 +739,6 @@ export default function Titlebar() {
                     >
                       <Plus className="w-3 h-3" />
                       Create Environment
-                    </button>
-                    <button
-                      onClick={() => {
-                        openEnvEditor();
-                        setIsEnvOpen(false);
-                      }}
-                      className="flex items-center justify-center gap-1.5 w-full py-1 text-xs text-text-muted hover:text-text-primary hover:bg-panel rounded transition-colors cursor-pointer"
-                    >
-                      <Settings className="w-3 h-3" />
-                      Manage Environments
                     </button>
                   </>
                 )}
