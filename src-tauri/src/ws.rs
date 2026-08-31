@@ -59,7 +59,7 @@ fn build_ws_client(setting: &AppSettings) -> AppResult<Connector> {
         .with_root_certificates(rustls::RootCertStore::empty())
         .with_no_client_auth();
 
-    if setting.verify_ssl_certificates {
+    if !setting.verify_ssl_certificates {
         config
             .dangerous()
             .set_certificate_verifier(Arc::new(NoCertificateVerification));
