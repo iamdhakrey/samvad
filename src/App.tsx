@@ -18,6 +18,7 @@ import { UpdaterOverlay } from "./components/UpdaterOverlay";
 import Titlebar from "./components/TitleBar";
 import { NewReqSaveModal } from "./components/NewRequestSaveModal";
 import GrpcEditor from "./components/gRPC";
+import GraphQlEditor from "./components/GraphQL";
 
 export default function App() {
   useAuth0Desktop();
@@ -33,20 +34,24 @@ export default function App() {
   const toggleSidebar = useVartaStore((s) => s.toggleSidebar);
   const initWsListener = useVartaStore((s) => s.initWsListener);
   const initGrpcListener = useVartaStore((s) => s.initGrpcListener);
+  const initGraphqlListener = useVartaStore((s) => s.initGraphqlListener);
 
   // Detect if active tab is a WebSocket tab
   const isWsTab = activeTab?.request.method === "WS";
   const isGrpcTab = activeTab?.request.type === "grpc";
+  const isGraphQlTab = activeTab?.request.type === "graphql";
 
-  // Initialize Tauri WS & gRPC event listeners on mount
+  // Initialize Tauri WS, gRPC & GraphQL event listeners on mount
   useEffect(() => {
     const cleanupWs = initWsListener();
     const cleanupGrpc = initGrpcListener();
+    const cleanupGraphql = initGraphqlListener();
     return () => {
       cleanupWs.then((fn) => fn());
       cleanupGrpc.then((fn) => fn());
+      cleanupGraphql.then((fn) => fn());
     };
-  }, [initWsListener, initGrpcListener]);
+  }, [initWsListener, initGrpcListener, initGraphqlListener]);
 
   const initFonts = useSettingsStore(s => s.initFonts);
   const settingsFont = useSettingsStore(s => s.settings?.font);
@@ -111,7 +116,9 @@ export default function App() {
               </div>
             )}
 
-            {activeTab && isGrpcTab ? (
+            {activeTab && isGraphQlTab ? (
+              <GraphQlEditor isMobile={isMobile} />
+            ) : activeTab && isGrpcTab ? (
               <GrpcEditor isMobile={isMobile} />
             ) : (
               <>

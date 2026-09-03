@@ -58,7 +58,7 @@ function RequestPanel({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [saveActiveRequest]);
 
-  if (tab.request.type === "grpc") {
+  if (tab.request.type !== "http") {
     return null;
   }
   return (

@@ -7,6 +7,11 @@ import {
   GrpcMethod,
   GrpcMetadataRow,
   GrpcCallStatus,
+  GraphQlCallStatus,
+  GraphQlHeaderRow,
+  GraphQlResponse,
+  GraphQlSchema,
+  GraphQlSubscriptionMessage,
 } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import { sendNativeRequest } from "../services/rest";
@@ -101,6 +106,28 @@ interface VartaState {
   cancelGrpcCall: () => Promise<void>;
   loadGrpcReflection: () => Promise<void>;
   initGrpcListener: () => Promise<UnlistenFn>;
+
+  // ── GraphQL state ─────────────────────────────────────────────────────
+  graphqlCallStatus: GraphQlCallStatus;
+  graphqlResponse: GraphQlResponse | null;
+  graphqlSchema: GraphQlSchema | null;
+  graphqlSchemaLoading: boolean;
+  graphqlSubscriptionMessages: GraphQlSubscriptionMessage[];
+  graphqlConnectionId: string | null;
+  graphqlHeaders: GraphQlHeaderRow[];
+
+  // ── GraphQL actions ──────────────────────────────────────────────────
+  setGraphqlCallStatus: (s: GraphQlCallStatus) => void;
+  setGraphqlResponse: (r: GraphQlResponse | null) => void;
+  setGraphqlSchema: (schema: GraphQlSchema | null) => void;
+  setGraphqlHeaders: (rows: GraphQlHeaderRow[]) => void;
+  addGraphqlSubscriptionMessage: (msg: GraphQlSubscriptionMessage) => void;
+  clearGraphqlMessages: () => void;
+  loadGraphqlSchema: () => Promise<void>;
+  invokeGraphql: () => Promise<void>;
+  subscribeGraphql: () => Promise<void>;
+  cancelGraphqlSubscription: () => Promise<void>;
+  initGraphqlListener: () => Promise<UnlistenFn>;
 }
 
 let tabCounter = 0;
@@ -149,6 +176,15 @@ export const useVartaStore = create<VartaState>((set, get) => ({
   grpcConnectionId: null,
   grpcResponseMetadata: {},
   grpcResponseStatus: null,
+
+  // ── GraphQL initial state ────────────────────────────────────────────
+  graphqlCallStatus: "idle",
+  graphqlResponse: null,
+  graphqlSchema: null,
+  graphqlSchemaLoading: false,
+  graphqlSubscriptionMessages: [],
+  graphqlConnectionId: null,
+  graphqlHeaders: [{ id: "gh1", key: "", value: "", enabled: true }],
 
   setIsNewReqSaveOpen: (open) => set({ isNewReqSaveOpen: open }),
   closeNewReqSave: () => set({ isNewReqSaveOpen: false }),
@@ -945,5 +981,160 @@ export const useVartaStore = create<VartaState>((set, get) => ({
     } finally {
       set({ grpcReflectionLoading: false });
     }
+  },
+
+  // ── GraphQL actions ───────────────────────────────────────────────────
+
+  setGraphqlCallStatus: (s) => set({ graphqlCallStatus: s }),
+  setGraphqlResponse: (r) => set({ graphqlResponse: r }),
+  setGraphqlSchema: (schema) => set({ graphqlSchema: schema }),
+  setGraphqlHeaders: (rows) => set({ graphqlHeaders: rows }),
+  addGraphqlSubscriptionMessage: (msg) =>
+    set((s) => ({
+      graphqlSubscriptionMessages: [...s.graphqlSubscriptionMessages, msg],
+    })),
+  clearGraphqlMessages: () =>
+    set({ graphqlSubscriptionMessages: [], graphqlResponse: null }),
+
+  loadGraphqlSchema: async () => {
+    const { activeTab } = get();
+    const url = activeTab?.request.url;
+    if (!url?.trim()) return;
+
+    // collect headers from the graphqlHeaders rows
+    const headers = get().graphqlHeaders.filter(
+      (h) => h.enabled && h.key.trim()
+    );
+
+    const auth = (activeTab?.request as any)?.auth;
+
+    set({ graphqlSchemaLoading: true, graphqlSchema: null });
+    try {
+      const schema = await invoke<GraphQlSchema>("graphql_introspect", {
+        url,
+        headers,
+        auth,
+      });
+      set({ graphqlSchema: schema });
+    } catch (e: any) {
+      console.error("[GraphQL] introspect error:", e);
+    } finally {
+      set({ graphqlSchemaLoading: false });
+    }
+  },
+
+  invokeGraphql: async () => {
+    const { activeTab } = get();
+    if (!activeTab || activeTab.request.type !== "graphql") return;
+    const req = { ...(activeTab.request as any) };
+
+    // If no operationName is set but document has named operations, pick the first one
+    if (!req.operationName && !req.operation_name && req.query) {
+      const match = /(?:^|\s)(?:query|mutation|subscription)\s+([A-Za-z0-9_]+)/.exec(req.query);
+      if (match && match[1]) {
+        req.operationName = match[1];
+        req.operation_name = match[1];
+      }
+    }
+
+    set({ graphqlCallStatus: "sending", graphqlResponse: null });
+    try {
+      const response = await invoke<GraphQlResponse>("graphql_execute", {
+        request: req,
+      });
+      set({
+        graphqlCallStatus: response.errors ? "error" : "ok",
+        graphqlResponse: response,
+      });
+    } catch (e: any) {
+      console.error("[GraphQL] execute error:", e);
+      set({
+        graphqlCallStatus: "error",
+        graphqlResponse: {
+          status: 0,
+          statusText: "Request Failed",
+          timeMs: 0,
+          sizeBytes: 0,
+          headers: {},
+          errors: JSON.stringify([{ message: typeof e === "string" ? e : String(e) }], null, 2),
+        },
+      });
+    }
+  },
+
+  subscribeGraphql: async () => {
+    const { activeTab } = get();
+    if (!activeTab || activeTab.request.type !== "graphql") return;
+    const req = { ...(activeTab.request as any) };
+
+    // If no operationName is set but document has named operations, pick the first one
+    if (!req.operationName && !req.operation_name && req.query) {
+      const match = /(?:^|\s)(?:query|mutation|subscription)\s+([A-Za-z0-9_]+)/.exec(req.query);
+      if (match && match[1]) {
+        req.operationName = match[1];
+        req.operation_name = match[1];
+      }
+    }
+
+    set({
+      graphqlCallStatus: "streaming",
+      graphqlSubscriptionMessages: [],
+      graphqlConnectionId: null,
+    });
+    try {
+      const connectionId = await invoke<string>("graphql_subscribe", {
+        request: req,
+      });
+      set({ graphqlConnectionId: connectionId });
+    } catch (e: any) {
+      console.error("[GraphQL] subscribe error:", e);
+      set({ graphqlCallStatus: "error", graphqlConnectionId: null });
+    }
+  },
+
+  cancelGraphqlSubscription: async () => {
+    const { graphqlConnectionId } = get();
+    if (graphqlConnectionId) {
+      try {
+        await invoke("graphql_unsubscribe", { connectionId: graphqlConnectionId });
+      } catch (e) {
+        console.error("[GraphQL] cancel error:", e);
+      }
+    }
+    set({
+      graphqlCallStatus: "cancelled",
+      graphqlConnectionId: null,
+    });
+    setTimeout(() => set({ graphqlCallStatus: "idle" }), 800);
+  },
+
+  initGraphqlListener: async () => {
+    const unlisten = await listen<{
+      connectionId: string;
+      eventType: string;
+      payload: string;
+      timestamp: string;
+    }>("graphql://event", (event) => {
+      const { connectionId, eventType, payload, timestamp } = event.payload;
+      const { graphqlConnectionId } = get();
+
+      if (!graphqlConnectionId || graphqlConnectionId === connectionId) {
+        get().addGraphqlSubscriptionMessage({
+          id: crypto.randomUUID(),
+          connectionId,
+          eventType: eventType as any,
+          payload,
+          timestamp,
+        });
+
+        if (eventType === "complete") {
+          set({ graphqlCallStatus: "ok", graphqlConnectionId: null });
+        } else if (eventType === "error") {
+          set({ graphqlCallStatus: "error" });
+        }
+      }
+    });
+
+    return unlisten;
   },
 }));

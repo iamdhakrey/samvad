@@ -60,9 +60,14 @@ export interface WorkspaceStore {
     collectionId: string,
     folderId: string | null,
     name: string,
-    type: "WS" | "REST" | "GRPC",
+    type: "WS" | "REST" | "GRPC" | "GRAPHQL",
   ) => Promise<void>;
   createWs: (
+    collectionId: string,
+    folderId: string | null,
+    name: string,
+  ) => Promise<void>;
+  createGraphQl: (
     collectionId: string,
     folderId: string | null,
     name: string,
@@ -471,7 +476,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     collectionId: string,
     folderId: string | null,
     name: string,
-    type: "WS" | "REST" | "GRPC",
+    type: "WS" | "REST" | "GRPC" | "GRAPHQL",
   ) => {
     set({ isLoadingCollectionTree: true });
     try {
@@ -519,6 +524,34 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
       await get().fetchCollectionTree(collectionId);
     } catch (err) {
       console.error("Error creating WS request:", err);
+      set({ error: String(err), isLoadingCollectionTree: false });
+    }
+  },
+
+  createGraphQl: async (
+    collectionId: string,
+    folderId: string | null,
+    name: string,
+  ) => {
+    set({ isLoadingCollectionTree: true });
+    try {
+      console.log(
+        "Creating GraphQL request:",
+        name,
+        "in collection:",
+        collectionId,
+        "folder:",
+        folderId,
+      );
+      await invoke("create_request", {
+        collectionid: collectionId,
+        folderid: folderId,
+        name: name,
+        reqtype: "graphql",
+      });
+      await get().fetchCollectionTree(collectionId);
+    } catch (err) {
+      console.error("Error creating GraphQL request:", err);
       set({ error: String(err), isLoadingCollectionTree: false });
     }
   },
