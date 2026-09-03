@@ -28,7 +28,7 @@ export const CollectionsTree: React.FC = () => {
   const [activeMenuOpen, setActiveMenuOpen] = useState(false);
   const [addingItem, setAddingItem] = useState<{
     collectionId: string;
-    type: "folder" | "request" | "ws" | "grpc";
+    type: "folder" | "request" | "ws" | "grpc" | "graphql";
   } | null>(null);
   const [newItemName, setNewItemName] = useState("");
 
@@ -70,6 +70,8 @@ export const CollectionsTree: React.FC = () => {
       await createWs(addingItem.collectionId, null, newItemName);
     } else if (addingItem.type === "grpc") {
       await createRequest(addingItem.collectionId, null, newItemName, "GRPC");
+    } else if (addingItem.type === "graphql") {
+      await createRequest(addingItem.collectionId, null, newItemName, "GRAPHQL");
     } else {
       await createRequest(addingItem.collectionId, null, newItemName, "REST");
     }

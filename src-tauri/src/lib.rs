@@ -27,6 +27,7 @@ use crate::ws::{
 };
 
 use crate::commands::auth::{self, PkceSessionState};
+use crate::commands::graphql;
 use crate::commands::grpc;
 
 use crate::commands::fonts;
@@ -79,6 +80,7 @@ pub fn run() {
                 data_dir,
                 ws_connections: Default::default(),
                 grpc_state: Default::default(),
+                graphql_state: Default::default(),
             });
 
             app_handle.manage::<PkceSessionState>(Arc::new(Mutex::new(None)));
@@ -156,6 +158,11 @@ pub fn run() {
             grpc::grpc_invoke,
             grpc::grpc_cancel,
             grpc::grpc_send_message,
+            // GraphQL
+            graphql::graphql_introspect,
+            graphql::graphql_execute,
+            graphql::graphql_subscribe,
+            graphql::graphql_unsubscribe,
             // fonts
             fonts::get_system_fonts,
         ])

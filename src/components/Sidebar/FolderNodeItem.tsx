@@ -27,7 +27,7 @@ export const FolderNodeItem: React.FC<{
   // Dropdown & Creation States
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [addingItem, setAddingItem] = useState<
-    "folder" | "request" | "ws" | "grpc" | null
+    "folder" | "request" | "ws" | "grpc" | "graphql" | null
   >(null);
   const [newItemName, setNewItemName] = useState("");
 
@@ -62,6 +62,13 @@ export const FolderNodeItem: React.FC<{
         node.folder.id,
         newItemName,
         "GRPC",
+      );
+    } else if (addingItem === "graphql") {
+      await createRequest(
+        node.folder.collectionId,
+        node.folder.id,
+        newItemName,
+        "GRAPHQL",
       );
     } else {
       await createRequest(

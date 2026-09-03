@@ -161,6 +161,7 @@ export const MethodStyles: Record<string, string> = {
   WS: "text-method-ws",
   QUERY: "text-method-query",
   GRPC: "text-method-grpc",
+  GRAPHQL: "text-method-graphql",
 };
 
 // ── gRPC types ───────────────────────────────────────────────────────
@@ -202,3 +203,87 @@ export interface GrpcMetadataRow {
   value: string;
   enabled: boolean;
 }
+
+// ── GraphQL types ─────────────────────────────────────────────────────
+
+export type GraphQlOperationType = "query" | "mutation" | "subscription";
+
+export type GraphQlCallStatus =
+  | "idle"
+  | "sending"
+  | "streaming"
+  | "ok"
+  | "error"
+  | "cancelled";
+
+export interface GraphQlHeaderRow {
+  id: string;
+  key: string;
+  value: string;
+  enabled: boolean;
+}
+
+export interface GraphQlSubscriptionMessage {
+  id: string;
+  connectionId: string;
+  eventType: "data" | "error" | "complete" | "connecting";
+  payload: string;
+  timestamp: string;
+}
+
+export interface GraphQlTypeRef {
+  kind: string;
+  name?: string;
+  ofType?: GraphQlTypeRef;
+}
+
+export interface GraphQlArg {
+  name: string;
+  description?: string;
+  typeRef: GraphQlTypeRef;
+  defaultValue?: string;
+}
+
+export interface GraphQlSchemaField {
+  name: string;
+  description?: string;
+  typeRef: GraphQlTypeRef;
+  args: GraphQlArg[];
+  isDeprecated: boolean;
+  deprecationReason?: string;
+}
+
+export interface GraphQlEnumValue {
+  name: string;
+  description?: string;
+  isDeprecated: boolean;
+  deprecationReason?: string;
+}
+
+export interface GraphQlSchemaType {
+  name: string;
+  kind: string;
+  description?: string;
+  fields: GraphQlSchemaField[];
+  inputFields: GraphQlArg[];
+  enumValues: GraphQlEnumValue[];
+}
+
+export interface GraphQlSchema {
+  queryType?: string;
+  mutationType?: string;
+  subscriptionType?: string;
+  types: GraphQlSchemaType[];
+}
+
+export interface GraphQlResponse {
+  status: number;
+  statusText: string;
+  timeMs: number;
+  sizeBytes: number;
+  headers: Record<string, string>;
+  data?: string;
+  errors?: string;
+  extensions?: string;
+}
+

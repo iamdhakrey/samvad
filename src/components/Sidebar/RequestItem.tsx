@@ -70,9 +70,15 @@ export const RequestItem: React.FC<{ request: Item }> = ({ request }) => {
             className={`flex items-center gap-2.5 truncate transition-colors`}
           >
             <span
-              className={`text-[10px] font-bold w-10 text-right ${request.type === "grpc" ? "text-method-grpc" : (MethodStyles[request.method as string] || "text-text-muted")}`}
+              className={`text-[10px] font-bold w-10 text-right ${
+                request.type === "grpc"
+                  ? "text-method-grpc"
+                  : request.type === "graphql"
+                  ? "text-method-graphql"
+                  : MethodStyles[request.method as string] || "text-text-muted"
+              }`}
             >
-              {request.type === "grpc" ? "gRPC" : request.method}
+              {request.type === "grpc" ? "gRPC" : request.type === "graphql" ? "GQL" : request.method}
             </span>
             <span className="truncate">{request.name}</span>
           </div>

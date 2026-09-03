@@ -42,9 +42,19 @@ export default function TabStrip() {
               }`}
             >
               <span
-                className={`text-[10px] font-semibold ${MethodStyles[tab.request.method as HttpMethod]}`}
+                className={`text-[10px] font-semibold ${
+                  (tab.request as any).type === "grpc"
+                    ? "text-method-grpc"
+                    : (tab.request as any).type === "graphql"
+                    ? "text-method-graphql"
+                    : MethodStyles[tab.request.method as HttpMethod] || "text-text-muted"
+                }`}
               >
-                {tab.request.method}
+                {(tab.request as any).type === "grpc"
+                  ? "gRPC"
+                  : (tab.request as any).type === "graphql"
+                  ? "GQL"
+                  : tab.request.method}
               </span>
               <span className="truncate">
                 {tab.request.name}

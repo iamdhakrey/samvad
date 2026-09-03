@@ -23,6 +23,11 @@ pub async fn get_addition_types() -> AppResult<Vec<AdditionType>> {
             icon: "FilePlus".into(),
         },
         AdditionType {
+            id: "graphql".into(),
+            label: "Add GraphQL Request".into(),
+            icon: "FilePlus".into(),
+        },
+        AdditionType {
             id: "folder".into(),
             label: "Add Folder".into(),
             icon: "FolderPlus".into(),
@@ -144,6 +149,15 @@ pub async fn create_request(
                 &name,
             )?;
             RequestItem::Grpc(req)
+        }
+        "graphql" => {
+            let req = crate::db::collections::create_graphql_request(
+                &state.data_dir,
+                &collectionid,
+                folderid.as_deref(),
+                &name,
+            )?;
+            RequestItem::GraphQL(req)
         }
         "rest" => {
             let req = crate::db::collections::create_request(

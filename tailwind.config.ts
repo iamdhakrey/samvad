@@ -36,6 +36,9 @@ export default {
           patch: "#8B5CF6",
           delete: "#EF4444",
           ws: "#10B981",
+          grpc: "#F97316",
+          graphql: "#E10098",
+          query: "#06B6D4",
         },
       },
       borderRadius: {

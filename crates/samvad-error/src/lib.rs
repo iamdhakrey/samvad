@@ -40,6 +40,9 @@ pub enum AppError {
     #[error("gRPC engine error: {0}")]
     GrpcError(String),
 
+    #[error("GraphQL error: {0}")]
+    GraphQlError(String),
+
     #[error("grpc error: {0}")]
     Prost(#[from] prost_reflect::DescriptorError),
 
