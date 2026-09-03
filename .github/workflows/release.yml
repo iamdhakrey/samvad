@@ -19,6 +19,7 @@ jobs:
       contents: write
     outputs:
       tag: ${{ steps.extract.outputs.tag }}
+      release_body: ${{ steps.notes.outputs.release_body }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -63,6 +64,35 @@ jobs:
           # Create and push the Git Tag
           git tag ${{ steps.extract.outputs.tag }}
           git push origin ${{ steps.extract.outputs.tag }}
+
+      - name: Generate Release Notes
+        id: notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.extract.outputs.tag }}"
+
+          # Fetch auto-generated changelog from GitHub API
+          CHANGELOG=$(gh api /repos/${{ github.repository }}/releases/generate-notes -f tag_name="$TAG" --jq .body || true)
+
+          PR_BODY="${{ github.event.pull_request.body }}"
+          PR_BODY_TRIMMED=$(echo "$PR_BODY" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
+          if [ -n "$PR_BODY_TRIMMED" ]; then
+            NOTES="## 📦 Release Description"$'\n\n'"$PR_BODY_TRIMMED"$'\n\n'"---"$'\n\n'"$CHANGELOG"
+          else
+            NOTES="$CHANGELOG"
+          fi
+
+          if [ -z "$NOTES" ]; then
+            NOTES="Release $TAG"
+          fi
+
+          {
+            echo "release_body<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
   # ==========================================
   # JOB 2: Build Matrix & Publish to GitHub
@@ -127,10 +157,5 @@ jobs:
           releaseName: "Release ${{ needs.bump-and-tag.outputs.tag }}"
           releaseDraft: false
           prerelease: false
-          generateReleaseNotes: true 
-          releaseBody: |
-            ## 📦 Release Description
-            ${{ github.event.pull_request.body }}
-            
-            ---
+          releaseBody: ${{ needs.bump-and-tag.outputs.release_body }}
           args: ${{ matrix.args }}
