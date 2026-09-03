@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use samvad_db::{new_id, read_yaml, write_yaml, DataDir};
 use samvad_error::{AppError, AppResult};
 use samvad_models::{
-    ApiRequest, AuthConfig, Collection, CollectionTree, Folder, FolderNode, GrpcMethodType,
-    GrpcRequest, HttpMethod, RequestBody, RequestItem,
+    ApiRequest, AuthConfig, Collection, CollectionTree, Folder, FolderNode, GraphQlRequest,
+    GraphQlRequestType, GrpcMethodType, GrpcRequest, HttpMethod, RequestBody, RequestItem,
 };
 
 // ---------------------------------------------------------------------------
@@ -483,6 +483,32 @@ pub fn create_grpc_request(
     Ok(request)
 }
 
+pub fn create_graphql_request(
+    dd: &DataDir,
+    collection_id: &str,
+    folder_id: Option<&str>,
+    name: &str,
+) -> AppResult<GraphQlRequest> {
+    let request = GraphQlRequest {
+        id: new_id(),
+        collection_id: collection_id.to_string(),
+        folder_id: folder_id.map(str::to_string),
+        name: name.to_string(),
+        method: "GRAPHQL".to_string(),
+        url: String::new(),
+        query: "query {\n  \n}".to_string(),
+        variables: String::new(),
+        operation_name: None,
+        headers: vec![],
+        auth: AuthConfig::default(),
+        request_type: GraphQlRequestType::Query,
+    };
+
+    let req = RequestItem::GraphQL(request.clone());
+    save_request(dd, &req)?;
+    Ok(request)
+}
+
 /// Upsert — used both to create a brand-new request row (frontend
 /// generates the id client-side when a tab opens) and to save edits.
 pub fn save_request(dd: &DataDir, request: &RequestItem) -> AppResult<()> {
@@ -514,6 +540,10 @@ pub fn duplicate_request(dd: &DataDir, id: &str) -> AppResult<RequestItem> {
             req.id = new_req_id;
             req.name = format!("{} (copy)", req.name);
         }
+        RequestItem::GraphQL(req) => {
+            req.id = new_req_id;
+            req.name = format!("{} (copy)", req.name);
+        }
     }
     save_request(dd, &original)?;
     Ok(original)
@@ -526,6 +556,9 @@ pub fn rename_request(dd: &DataDir, id: &str, name: &str) -> AppResult<()> {
             req.name = name.to_string();
         }
         RequestItem::Grpc(req) => {
+            req.name = name.to_string();
+        }
+        RequestItem::GraphQL(req) => {
             req.name = name.to_string();
         }
     }

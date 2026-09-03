@@ -63,6 +63,75 @@ export type FolderNode = { folder: Folder, children: Array<FolderNode>, requests
 
 export type FontSettings = { appFontFamily: string, fontFamily: string, customFontPath: string | null, fontSize: number, lineHeight: number, enableLigatures: boolean, };
 
+export type GraphQlArg = { name: string, description?: string, typeRef: GraphQlTypeRef, defaultValue?: string, };
+
+export type GraphQlEnumValue = { name: string, description?: string, isDeprecated: boolean, deprecationReason?: string, };
+
+export type GraphQlField = { name: string, description?: string, typeRef: GraphQlTypeRef, args: Array<GraphQlArg>, isDeprecated: boolean, deprecationReason?: string, };
+
+/**
+ * A persisted GraphQL request item stored in a collection.
+ */
+export type GraphQlRequest = { id: string, collectionId: string, folderId: string | null, name: string, method: string, 
+/**
+ * The GraphQL endpoint URL
+ */
+url: string, 
+/**
+ * The query / mutation / subscription document text
+ */
+query: string, 
+/**
+ * JSON-encoded variables object (empty string = no variables)
+ */
+variables: string, operationName?: string, headers: Array<KeyValueRow>, auth: AuthConfig, requestType: GraphQlRequestType, };
+
+export type GraphQlRequestType = "query" | "mutation" | "subscription";
+
+/**
+ * Response returned by `graphql_execute`.
+ */
+export type GraphQlResponse = { status: number, statusText: string, timeMs: bigint, sizeBytes: bigint, headers: { [key in string]: string }, 
+/**
+ * Pretty-printed `data` field, or `None` if absent
+ */
+data?: string, 
+/**
+ * Pretty-printed `errors` array, or `None` if absent
+ */
+errors?: string, 
+/**
+ * Pretty-printed `extensions` object, or `None` if absent
+ */
+extensions?: string, };
+
+/**
+ * The top-level schema returned by introspection.
+ */
+export type GraphQlSchema = { queryType?: string, mutationType?: string, subscriptionType?: string, types: Array<GraphQlSchemaType>, };
+
+export type GraphQlSchemaType = { name: string, 
+/**
+ * OBJECT | SCALAR | INTERFACE | UNION | ENUM | INPUT_OBJECT
+ */
+kind: string, description?: string, fields: Array<GraphQlField>, inputFields: Array<GraphQlArg>, enumValues: Array<GraphQlEnumValue>, };
+
+/**
+ * An event emitted over the Tauri `graphql://event` channel
+ * for each subscription message (data, error, complete, connecting).
+ */
+export type GraphQlSubscriptionEvent = { connectionId: string, 
+/**
+ * "data" | "error" | "complete" | "connecting"
+ */
+eventType: string, 
+/**
+ * JSON-stringified payload
+ */
+payload: string, timestamp: string, };
+
+export type GraphQlTypeRef = { kind: string, name?: string, ofType?: GraphQlTypeRef, };
+
 export type GrpcEventType = "info" | "error" | "clientMessage" | "serverMessage" | "connectionStart" | "connectionEnd";
 
 export type GrpcMethod = { name: string, fullName: string, requestType: string, responseType: string, streamType: GrpcStreamType, };
@@ -159,7 +228,7 @@ includeDirs: Array<string>, };
 
 export type RequestBody = { mode: BodyMode | null, raw?: string, formData?: Array<KeyValueRow>, urlEncoded?: Array<KeyValueRow>, files?: Array<UploadedFile>, };
 
-export type RequestItem = { "type": "http" } & ApiRequest | { "type": "grpc" } & GrpcRequest;
+export type RequestItem = { "type": "http" } & ApiRequest | { "type": "grpc" } & GrpcRequest | { "type": "graphql" } & GraphQlRequest;
 
 export type Theme = { id: string, name: string, isBuiltin: boolean, tokens: ThemeTokens, };
 

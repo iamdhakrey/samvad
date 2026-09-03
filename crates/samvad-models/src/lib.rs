@@ -317,6 +317,9 @@ pub struct Folder {
 pub enum RequestItem {
     Http(ApiRequest),
     Grpc(GrpcRequest),
+    #[serde(rename = "graphql")]
+    #[ts(rename = "graphql")]
+    GraphQL(GraphQlRequest),
 }
 
 impl RequestItem {
@@ -324,6 +327,7 @@ impl RequestItem {
         match self {
             RequestItem::Http(r) => &r.id,
             RequestItem::Grpc(r) => &r.id,
+            RequestItem::GraphQL(r) => &r.id,
         }
     }
 
@@ -331,6 +335,7 @@ impl RequestItem {
         match self {
             RequestItem::Http(r) => &r.collection_id,
             RequestItem::Grpc(r) => &r.collection_id,
+            RequestItem::GraphQL(r) => &r.collection_id,
         }
     }
 
@@ -338,6 +343,7 @@ impl RequestItem {
         match self {
             RequestItem::Http(r) => r.folder_id.as_deref(),
             RequestItem::Grpc(r) => r.folder_id.as_deref(),
+            RequestItem::GraphQL(r) => r.folder_id.as_deref(),
         }
     }
 }
@@ -788,4 +794,183 @@ pub struct GrpcStreamEvent {
     pub direction: String, // "Sent" | "Received"
     pub message: String,
     pub timestamp: String,
+}
+
+// -------------------------------------------------------
+// GraphQL
+// -------------------------------------------------------
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub enum GraphQlRequestType {
+    #[default]
+    Query,
+    Mutation,
+    Subscription,
+}
+
+/// A persisted GraphQL request item stored in a collection.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GraphQlRequest {
+    pub id: String,
+    #[serde(default)]
+    pub collection_id: String,
+    #[serde(default)]
+    pub folder_id: Option<String>,
+    pub name: String,
+    #[serde(default = "default_graphql_method")]
+    pub method: String,
+    /// The GraphQL endpoint URL
+    pub url: String,
+    /// The query / mutation / subscription document text
+    pub query: String,
+    /// JSON-encoded variables object (empty string = no variables)
+    #[serde(default)]
+    pub variables: String,
+    #[serde(default)]
+    #[ts(optional)]
+    pub operation_name: Option<String>,
+    pub headers: Vec<KeyValueRow>,
+    pub auth: AuthConfig,
+    pub request_type: GraphQlRequestType,
+}
+
+fn default_graphql_method() -> String {
+    "GRAPHQL".to_string()
+}
+
+impl Default for GraphQlRequest {
+    fn default() -> Self {
+        Self {
+            id: String::new(),
+            collection_id: String::new(),
+            folder_id: None,
+            name: "Untitled GraphQL".to_string(),
+            method: "GRAPHQL".to_string(),
+            url: String::new(),
+            query: String::new(),
+            variables: String::new(),
+            operation_name: None,
+            headers: Vec::new(),
+            auth: AuthConfig::default(),
+            request_type: GraphQlRequestType::Query,
+        }
+    }
+}
+
+/// Response returned by `graphql_execute`.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GraphQlResponse {
+    pub status: u16,
+    pub status_text: String,
+    pub time_ms: u128,
+    pub size_bytes: u64,
+    pub headers: BTreeMap<String, String>,
+    /// Pretty-printed `data` field, or `None` if absent
+    #[ts(optional)]
+    pub data: Option<String>,
+    /// Pretty-printed `errors` array, or `None` if absent
+    #[ts(optional)]
+    pub errors: Option<String>,
+    /// Pretty-printed `extensions` object, or `None` if absent
+    #[ts(optional)]
+    pub extensions: Option<String>,
+}
+
+/// An event emitted over the Tauri `graphql://event` channel
+/// for each subscription message (data, error, complete, connecting).
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GraphQlSubscriptionEvent {
+    pub connection_id: String,
+    /// "data" | "error" | "complete" | "connecting"
+    pub event_type: String,
+    /// JSON-stringified payload
+    pub payload: String,
+    pub timestamp: String,
+}
+
+// ── Schema types (returned by introspection) ──────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GraphQlTypeRef {
+    pub kind: String,
+    #[ts(optional)]
+    pub name: Option<String>,
+    #[ts(optional)]
+    pub of_type: Option<Box<GraphQlTypeRef>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GraphQlArg {
+    pub name: String,
+    #[ts(optional)]
+    pub description: Option<String>,
+    pub type_ref: GraphQlTypeRef,
+    #[ts(optional)]
+    pub default_value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GraphQlField {
+    pub name: String,
+    #[ts(optional)]
+    pub description: Option<String>,
+    pub type_ref: GraphQlTypeRef,
+    pub args: Vec<GraphQlArg>,
+    pub is_deprecated: bool,
+    #[ts(optional)]
+    pub deprecation_reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GraphQlEnumValue {
+    pub name: String,
+    #[ts(optional)]
+    pub description: Option<String>,
+    pub is_deprecated: bool,
+    #[ts(optional)]
+    pub deprecation_reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GraphQlSchemaType {
+    pub name: String,
+    /// OBJECT | SCALAR | INTERFACE | UNION | ENUM | INPUT_OBJECT
+    pub kind: String,
+    #[ts(optional)]
+    pub description: Option<String>,
+    pub fields: Vec<GraphQlField>,
+    pub input_fields: Vec<GraphQlArg>,
+    pub enum_values: Vec<GraphQlEnumValue>,
+}
+
+/// The top-level schema returned by introspection.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "models.ts")]
+pub struct GraphQlSchema {
+    #[ts(optional)]
+    pub query_type: Option<String>,
+    #[ts(optional)]
+    pub mutation_type: Option<String>,
+    #[ts(optional)]
+    pub subscription_type: Option<String>,
+    pub types: Vec<GraphQlSchemaType>,
 }
