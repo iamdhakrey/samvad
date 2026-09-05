@@ -116,6 +116,7 @@ pub async fn graphql_subscribe(
     window: Window,
     request: GraphQlRequest,
 ) -> AppResult<String> {
+    println!("graphql_subscribe");
     let mut headers = rows_to_map(&request.headers);
     apply_auth_headers(&request.auth, &mut headers);
 
