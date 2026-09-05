@@ -11,7 +11,9 @@ interface GraphQlEditorProps {
 }
 
 export default function GraphQlEditor({ isMobile = false }: GraphQlEditorProps) {
-  const activeTab = useVartaStore((s) => s.activeTab);
+  const tabs = useVartaStore((s) => s.tabs);
+  const activeTabId = useVartaStore((s) => s.activeTabId);
+  const activeTab = tabs.find((t) => t.id === activeTabId);
   const saveActiveRequest = useVartaStore((s) => s.saveActiveRequest);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function GraphQlEditor({ isMobile = false }: GraphQlEditorProps) 
 
         {/* Right / Bottom pane: Response viewer */}
         <div className="flex flex-1 flex-col min-w-0 bg-bg">
-          <GraphQlResponsePanel isMobile={isMobile} />
+          <GraphQlResponsePanel isMobile={isMobile} tab={activeTab} />
         </div>
       </div>
 

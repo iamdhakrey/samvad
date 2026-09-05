@@ -123,10 +123,10 @@ interface VartaState {
   setGraphqlHeaders: (rows: GraphQlHeaderRow[]) => void;
   addGraphqlSubscriptionMessage: (msg: GraphQlSubscriptionMessage) => void;
   clearGraphqlMessages: () => void;
-  loadGraphqlSchema: () => Promise<void>;
-  invokeGraphql: () => Promise<void>;
-  subscribeGraphql: () => Promise<void>;
-  cancelGraphqlSubscription: () => Promise<void>;
+  loadGraphqlSchema: (targetUrl?: string) => Promise<void>;
+  invokeGraphql: (targetTabId?: string) => Promise<void>;
+  subscribeGraphql: (targetTabId?: string) => Promise<void>;
+  cancelGraphqlSubscription: (targetTabId?: string) => Promise<void>;
   initGraphqlListener: () => Promise<UnlistenFn>;
 }
 
@@ -215,6 +215,11 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       wsSavedMessages: [],
       wsProtocol: "raw",
       wsGqlSubscriptionIds: [],
+      // Initialize tab-isolated GraphQL state:
+      graphqlCallStatus: "idle",
+      graphqlResponse: null,
+      graphqlSubscriptionMessages: [],
+      graphqlConnectionId: null,
     };
     set((s) => ({
       tabs: [...s.tabs, tab],
@@ -235,6 +240,11 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       wsSavedMessages: [],
       wsProtocol: "raw",
       wsGqlSubscriptionIds: [],
+      // Initialize tab-isolated GraphQL state:
+      graphqlCallStatus: "idle",
+      graphqlResponse: null,
+      graphqlSubscriptionMessages: [],
+      graphqlConnectionId: null,
     };
     set((s) => ({ tabs: [...s.tabs, tab], activeTabId: tab.id }));
   },
@@ -278,11 +288,15 @@ export const useVartaStore = create<VartaState>((set, get) => ({
     const { activeTabId } = get();
     if (!activeTabId) return;
 
-    set((s) => ({
-      tabs: s.tabs.map((t) =>
+    set((s) => {
+      const updatedTabs = s.tabs.map((t) =>
         t.id === activeTabId ? { ...t, isSending: true } : t,
-      ),
-    }));
+      );
+      return {
+        tabs: updatedTabs,
+        activeTab: updatedTabs.find((t) => t.id === s.activeTabId) || null,
+      };
+    });
 
     // Placeholder for the real call — in the Tauri app this invokes a Rust
     // command (e.g. `invoke("send_request", { request })`) instead of fetch,
@@ -296,21 +310,25 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       try {
         const res = await sendNativeRequest(payload);
         console.log(res);
-        set((s) => ({
-          tabs: s.tabs.map((t) =>
+        set((s) => {
+          const updatedTabs = s.tabs.map((t) =>
             t.id === activeTabId
               ? { ...t, isSending: false, response: res, error: undefined }
               : t,
-          ),
-        }));
+          );
+          return {
+            tabs: updatedTabs,
+            activeTab: updatedTabs.find((t) => t.id === s.activeTabId) || null,
+          };
+        });
         // setResponse(res);
         get().fetchHistory();
       } catch (err) {
         console.error(err);
 
         const errorMessage = err instanceof Error ? err.message : String(err);
-        set((s) => ({
-          tabs: s.tabs.map((t) =>
+        set((s) => {
+          const updatedTabs = s.tabs.map((t) =>
             t.id === activeTabId
               ? {
                 ...t,
@@ -319,8 +337,12 @@ export const useVartaStore = create<VartaState>((set, get) => ({
                 error: errorMessage,
               }
               : t,
-          ),
-        }));
+          );
+          return {
+            tabs: updatedTabs,
+            activeTab: updatedTabs.find((t) => t.id === s.activeTabId) || null,
+          };
+        });
         // setError(String(err));
       }
     }, 600);
@@ -996,9 +1018,9 @@ export const useVartaStore = create<VartaState>((set, get) => ({
   clearGraphqlMessages: () =>
     set({ graphqlSubscriptionMessages: [], graphqlResponse: null }),
 
-  loadGraphqlSchema: async () => {
+  loadGraphqlSchema: async (targetUrl?: string) => {
     const { activeTab } = get();
-    const url = activeTab?.request.url;
+    const url = targetUrl || activeTab?.request.url;
     if (!url?.trim()) return;
 
     // collect headers from the graphqlHeaders rows
@@ -1023,10 +1045,13 @@ export const useVartaStore = create<VartaState>((set, get) => ({
     }
   },
 
-  invokeGraphql: async () => {
-    const { activeTab } = get();
-    if (!activeTab || activeTab.request.type !== "graphql") return;
-    const req = { ...(activeTab.request as any) };
+  invokeGraphql: async (targetTabId?: string) => {
+    const { activeTabId, tabs } = get();
+    const id = targetTabId || activeTabId;
+    if (!id) return;
+    const tab = tabs.find((t) => t.id === id);
+    if (!tab || tab.request.type !== "graphql") return;
+    const req = { ...(tab.request as any) };
 
     // If no operationName is set but document has named operations, pick the first one
     if (!req.operationName && !req.operation_name && req.query) {
@@ -1037,37 +1062,88 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       }
     }
 
-    set({ graphqlCallStatus: "sending", graphqlResponse: null });
+    set((s) => {
+      const nextTabs = s.tabs.map((t) =>
+        t.id === id
+          ? { ...t, graphqlCallStatus: "sending" as const, graphqlResponse: null }
+          : t
+      );
+      return {
+        tabs: nextTabs,
+        activeTab: nextTabs.find((t) => t.id === s.activeTabId) || null,
+        ...(id === s.activeTabId
+          ? {
+              graphqlCallStatus: "sending",
+              graphqlResponse: null,
+            }
+          : {}),
+      };
+    });
+
     try {
       const response = await invoke<GraphQlResponse>("graphql_execute", {
         request: req,
       });
-      set({
-        graphqlCallStatus: response.errors ? "error" : "ok",
-        graphqlResponse: response,
+      set((s) => {
+        const nextTabs = s.tabs.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                graphqlCallStatus: (response.errors ? "error" : "ok") as GraphQlCallStatus,
+                graphqlResponse: response,
+              }
+            : t
+        );
+        return {
+          tabs: nextTabs,
+          activeTab: nextTabs.find((t) => t.id === s.activeTabId) || null,
+          ...(id === s.activeTabId
+            ? {
+                graphqlCallStatus: (response.errors ? "error" : "ok") as GraphQlCallStatus,
+                graphqlResponse: response,
+              }
+            : {}),
+        };
       });
     } catch (e: any) {
       console.error("[GraphQL] execute error:", e);
-      set({
-        graphqlCallStatus: "error",
-        graphqlResponse: {
-          status: 0,
-          statusText: "Request Failed",
-          timeMs: 0,
-          sizeBytes: 0,
-          headers: {},
-          errors: JSON.stringify([{ message: typeof e === "string" ? e : String(e) }], null, 2),
-        },
+      const errResp: GraphQlResponse = {
+        status: 0,
+        statusText: "Request Failed",
+        timeMs: 0,
+        sizeBytes: 0,
+        headers: {},
+        errors: JSON.stringify([{ message: typeof e === "string" ? e : String(e) }], null, 2),
+      };
+      set((s) => {
+        const nextTabs = s.tabs.map((t) =>
+          t.id === id
+            ? { ...t, graphqlCallStatus: "error" as const, graphqlResponse: errResp }
+            : t
+        );
+        return {
+          tabs: nextTabs,
+          activeTab: nextTabs.find((t) => t.id === s.activeTabId) || null,
+          ...(id === s.activeTabId
+            ? {
+                graphqlCallStatus: "error",
+                graphqlResponse: errResp,
+              }
+            : {}),
+        };
       });
     }
   },
 
-  subscribeGraphql: async () => {
-    const { activeTab } = get();
-    if (!activeTab || activeTab.request.type !== "graphql") return;
-    const req = { ...(activeTab.request as any) };
+  subscribeGraphql: async (targetTabId?: string) => {
+    const { activeTabId, tabs } = get();
+    const id = targetTabId || activeTabId;
+    if (!id) return;
+    const tab = tabs.find((t) => t.id === id);
+    if (!tab || tab.request.type !== "graphql") return;
+    const req = { ...(tab.request as any) };
 
-    // If no operationName is set but document has named operations, pick the first one
+    // Resolve operation name if needed
     if (!req.operationName && !req.operation_name && req.query) {
       const match = /(?:^|\s)(?:query|mutation|subscription)\s+([A-Za-z0-9_]+)/.exec(req.query);
       if (match && match[1]) {
@@ -1076,36 +1152,123 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       }
     }
 
-    set({
-      graphqlCallStatus: "streaming",
-      graphqlSubscriptionMessages: [],
-      graphqlConnectionId: null,
+    const reqId = tab.request.id;
+
+    // Immediately set streaming state and connectionId on THIS tab so no early frames are dropped
+    set((s) => {
+      const nextTabs = s.tabs.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              graphqlCallStatus: "streaming" as const,
+              graphqlSubscriptionMessages: [],
+              graphqlConnectionId: reqId,
+            }
+          : t
+      );
+      return {
+        tabs: nextTabs,
+        activeTab: nextTabs.find((t) => t.id === s.activeTabId) || null,
+        ...(id === s.activeTabId
+          ? {
+              graphqlCallStatus: "streaming",
+              graphqlSubscriptionMessages: [],
+              graphqlConnectionId: reqId,
+            }
+          : {}),
+      };
     });
+
     try {
       const connectionId = await invoke<string>("graphql_subscribe", {
         request: req,
       });
-      set({ graphqlConnectionId: connectionId });
+
+      // Keep connectionId in sync if Rust returned a specific ID
+      set((s) => {
+        const nextTabs = s.tabs.map((t) =>
+          t.id === id
+            ? { ...t, graphqlConnectionId: connectionId || reqId }
+            : t
+        );
+        return {
+          tabs: nextTabs,
+          activeTab: nextTabs.find((t) => t.id === s.activeTabId) || null,
+          ...(id === s.activeTabId
+            ? {
+                graphqlConnectionId: connectionId || reqId,
+              }
+            : {}),
+        };
+      });
     } catch (e: any) {
       console.error("[GraphQL] subscribe error:", e);
-      set({ graphqlCallStatus: "error", graphqlConnectionId: null });
+      set((s) => {
+        const nextTabs = s.tabs.map((t) =>
+          t.id === id
+            ? { ...t, graphqlCallStatus: "error" as const, graphqlConnectionId: null }
+            : t
+        );
+        return {
+          tabs: nextTabs,
+          activeTab: nextTabs.find((t) => t.id === s.activeTabId) || null,
+          ...(id === s.activeTabId
+            ? {
+                graphqlCallStatus: "error",
+                graphqlConnectionId: null,
+              }
+            : {}),
+        };
+      });
     }
   },
 
-  cancelGraphqlSubscription: async () => {
-    const { graphqlConnectionId } = get();
-    if (graphqlConnectionId) {
+  cancelGraphqlSubscription: async (targetTabId?: string) => {
+    const { activeTabId, tabs } = get();
+    const id = targetTabId || activeTabId;
+    if (!id) return;
+    const tab = tabs.find((t) => t.id === id);
+    const cid = tab?.graphqlConnectionId || tab?.request.id;
+    if (cid) {
       try {
-        await invoke("graphql_unsubscribe", { connectionId: graphqlConnectionId });
+        await invoke("graphql_unsubscribe", { connectionId: cid });
       } catch (e) {
         console.error("[GraphQL] cancel error:", e);
       }
     }
-    set({
-      graphqlCallStatus: "cancelled",
-      graphqlConnectionId: null,
+    set((s) => {
+      const nextTabs = s.tabs.map((t) =>
+        t.id === id
+          ? { ...t, graphqlCallStatus: "cancelled" as const, graphqlConnectionId: null }
+          : t
+      );
+      return {
+        tabs: nextTabs,
+        activeTab: nextTabs.find((t) => t.id === s.activeTabId) || null,
+        ...(id === s.activeTabId
+          ? {
+              graphqlCallStatus: "cancelled",
+              graphqlConnectionId: null,
+            }
+          : {}),
+      };
     });
-    setTimeout(() => set({ graphqlCallStatus: "idle" }), 800);
+    setTimeout(() => {
+      set((s) => {
+        const nextTabs = s.tabs.map((t) =>
+          t.id === id ? { ...t, graphqlCallStatus: "idle" as const } : t
+        );
+        return {
+          tabs: nextTabs,
+          activeTab: nextTabs.find((t) => t.id === s.activeTabId) || null,
+          ...(id === s.activeTabId
+            ? {
+                graphqlCallStatus: "idle",
+              }
+            : {}),
+        };
+      });
+    }, 800);
   },
 
   initGraphqlListener: async () => {
@@ -1116,25 +1279,46 @@ export const useVartaStore = create<VartaState>((set, get) => ({
       timestamp: string;
     }>("graphql://event", (event) => {
       const { connectionId, eventType, payload, timestamp } = event.payload;
-      const { graphqlConnectionId } = get();
+      const newMsg: GraphQlSubscriptionMessage = {
+        id: crypto.randomUUID(),
+        connectionId,
+        eventType: eventType as any,
+        payload,
+        timestamp,
+      };
 
-      if (!graphqlConnectionId || graphqlConnectionId === connectionId) {
-        get().addGraphqlSubscriptionMessage({
-          id: crypto.randomUUID(),
-          connectionId,
-          eventType: eventType as any,
-          payload,
-          timestamp,
+      // Route event to the matching tab and keep activeTab synchronized
+      set((s) => {
+        const nextTabs = s.tabs.map((t) => {
+          if (
+            t.graphqlConnectionId === connectionId ||
+            t.request.id === connectionId
+          ) {
+            const isComplete = eventType === "complete";
+            const isError = eventType === "error";
+            return {
+              ...t,
+              graphqlSubscriptionMessages: [
+                ...(t.graphqlSubscriptionMessages || []),
+                newMsg,
+              ],
+              graphqlCallStatus: isComplete
+                ? ("ok" as const)
+                : isError
+                  ? ("error" as const)
+                  : ("streaming" as const),
+              graphqlConnectionId: isComplete ? null : (t.graphqlConnectionId || connectionId),
+            };
+          }
+          return t;
         });
 
-        if (eventType === "complete") {
-          set({ graphqlCallStatus: "ok", graphqlConnectionId: null });
-        } else if (eventType === "error") {
-          set({ graphqlCallStatus: "error" });
-        }
-      }
+        return {
+          tabs: nextTabs,
+          activeTab: nextTabs.find((t) => t.id === s.activeTabId) || null,
+        };
+      });
     });
-
     return unlisten;
   },
 }));
