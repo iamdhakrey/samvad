@@ -50,15 +50,21 @@ export interface RequestTab {
   response?: ApiResponse;
   isSending: boolean;
   error?: string;
-  // WebSocket state (only used when method is "WS")
+  // WebSocket state
   wsConnectionId?: string;
   wsMessages: WsMessage[];
   wsStatus: WsStatus;
   wsSavedMessages: WsSavedMessage[];
   wsProtocol: "raw" | "graphql-ws";
-  /** Tracks active graphql-ws subscription IDs for cleanup */
   wsGqlSubscriptionIds: string[];
+
+  // ── Add GraphQL Per-Tab State ──────────────────────────────
+  graphqlCallStatus?: GraphQlCallStatus;
+  graphqlResponse?: GraphQlResponse | null;
+  graphqlSubscriptionMessages?: GraphQlSubscriptionMessage[];
+  graphqlConnectionId?: string | null;
 }
+
 
 export interface Workspace {
   id: string;

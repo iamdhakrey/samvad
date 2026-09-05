@@ -24,7 +24,7 @@ export default function GraphQlAddressBar({
   tab,
   isMobile = false,
 }: GraphQlAddressBarProps) {
-  const callStatus = useVartaStore((s) => s.graphqlCallStatus);
+  const callStatus = tab.graphqlCallStatus || "idle";
   const schemaLoading = useVartaStore((s) => s.graphqlSchemaLoading);
   const loadSchema = useVartaStore((s) => s.loadGraphqlSchema);
   const invokeGraphql = useVartaStore((s) => s.invokeGraphql);
@@ -62,9 +62,9 @@ export default function GraphQlAddressBar({
     }
 
     if (isSubscription) {
-      subscribeGraphql();
+      subscribeGraphql(tab.id);
     } else {
-      invokeGraphql();
+      invokeGraphql(tab.id);
     }
   };
 
@@ -93,10 +93,10 @@ export default function GraphQlAddressBar({
           <GraphQlBadge />
           {operationSelector}
           <div className="ml-auto flex items-center gap-2">
-            <IntrospectButton loading={schemaLoading} disabled={!url.trim()} onClick={loadSchema} />
+            <IntrospectButton loading={schemaLoading} disabled={!url.trim()} onClick={() => loadSchema(url)} />
             <DocsButton onClick={openDocs} />
             {isActive && isSubscription ? (
-              <CancelButton onClick={cancelSub} />
+              <CancelButton onClick={() => cancelSub(tab.id)} />
             ) : (
               <SendButton
                 isSubscription={isSubscription}
@@ -111,7 +111,7 @@ export default function GraphQlAddressBar({
         <UrlAutocompleteInput
           url={url}
           onChange={(u) => updateActiveRequest({ url: u } as any)}
-          onEnter={loadSchema}
+          onEnter={() => loadSchema(url)}
           disabled={isActive}
         />
       </div>
@@ -125,17 +125,17 @@ export default function GraphQlAddressBar({
       <UrlAutocompleteInput
         url={url}
         onChange={(u) => updateActiveRequest({ url: u } as any)}
-        onEnter={loadSchema}
+        onEnter={() => loadSchema(url)}
         disabled={isActive}
       />
 
       {operationSelector}
 
-      <IntrospectButton loading={schemaLoading} disabled={!url.trim()} onClick={loadSchema} />
+      <IntrospectButton loading={schemaLoading} disabled={!url.trim()} onClick={() => loadSchema(url)} />
       <DocsButton onClick={openDocs} />
 
       {isActive && isSubscription ? (
-        <CancelButton onClick={cancelSub} />
+        <CancelButton onClick={() => cancelSub(tab.id)} />
       ) : (
         <SendButton
           isSubscription={isSubscription}

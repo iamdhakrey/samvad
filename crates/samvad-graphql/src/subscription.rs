@@ -127,7 +127,7 @@ pub async fn start_subscription(
         None
     };
 
-    let op_to_send = resolved_op.or_else(|| {
+    let _ = resolved_op.or_else(|| {
         let ops = crate::client::extract_operation_names(query);
         ops.first().map(|(_, name)| name.clone())
     });

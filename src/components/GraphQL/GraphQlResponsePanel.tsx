@@ -16,7 +16,7 @@ import {
 import Editor from "@monaco-editor/react";
 import { useVartaStore } from "../../store/vartaStore";
 import { useSettingsStore, DEFAULT_FONT_SETTINGS } from "../../store/settingStore";
-import { GraphQlCallStatus } from "../../types";
+import { GraphQlCallStatus, RequestTab } from "../../types";
 
 type ResTab = "response" | "headers" | "events";
 
@@ -66,16 +66,17 @@ const STATUS_CONFIG: Record<
 
 interface Props {
   isMobile?: boolean;
+  tab: RequestTab;
 }
 
-export default function GraphQlResponsePanel({ isMobile = false }: Props) {
+export default function GraphQlResponsePanel({ isMobile = false, tab }: Props) {
   const [activeTab, setActiveTab] = useState<ResTab>("response");
   const [copied, setCopied] = useState(false);
 
-  const callStatus = useVartaStore((s) => s.graphqlCallStatus);
-  const response = useVartaStore((s) => s.graphqlResponse);
-  const subMessages = useVartaStore((s) => s.graphqlSubscriptionMessages);
   const clearMessages = useVartaStore((s) => s.clearGraphqlMessages);
+  const callStatus = tab.graphqlCallStatus || "idle";
+  const response = tab.graphqlResponse || null;
+  const subMessages = tab.graphqlSubscriptionMessages || [];
   const cancelSub = useVartaStore((s) => s.cancelGraphqlSubscription);
 
   const settingsFont = useSettingsStore((s) => s.settings?.font);
@@ -91,17 +92,19 @@ export default function GraphQlResponsePanel({ isMobile = false }: Props) {
     }
   }, [subMessages.length, activeTab]);
 
-  // Auto-switch to events tab when streaming starts
+  // Auto-switch to events tab when streaming starts or messages arrive
   useEffect(() => {
-    if (isStreaming) setActiveTab("events");
-  }, [isStreaming]);
+    if (isStreaming || subMessages.length > 0) {
+      setActiveTab("events");
+    }
+  }, [isStreaming, subMessages.length]);
 
   // Switch to response tab when a query/mutation completes
   useEffect(() => {
-    if ((callStatus === "ok" || callStatus === "error") && response) {
+    if ((callStatus === "ok" || callStatus === "error") && response && subMessages.length === 0) {
       setActiveTab("response");
     }
-  }, [callStatus, response]);
+  }, [callStatus, response, subMessages.length]);
 
   const handleCopy = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -140,8 +143,8 @@ export default function GraphQlResponsePanel({ isMobile = false }: Props) {
         {response && (
           <span
             className={`font-mono text-xs px-1.5 py-0.5 rounded ${response.status >= 200 && response.status < 300
-                ? "bg-success/15 text-success"
-                : "bg-error/15 text-error"
+              ? "bg-success/15 text-success"
+              : "bg-error/15 text-error"
               }`}
           >
             {response.status} {response.statusText}
@@ -182,7 +185,7 @@ export default function GraphQlResponsePanel({ isMobile = false }: Props) {
         <div className="ml-auto flex items-center gap-1.5">
           {isStreaming && (
             <button
-              onClick={cancelSub}
+              onClick={() => cancelSub(tab.id)}
               className="flex items-center gap-1.5 rounded-md bg-method-graphql/20 border border-method-graphql/40 px-2.5 py-1 text-xs text-method-graphql hover:bg-method-graphql hover:text-white transition-colors cursor-pointer"
               title="Stop subscription"
             >
@@ -243,7 +246,7 @@ export default function GraphQlResponsePanel({ isMobile = false }: Props) {
             </span>
           )}
         </button>
-        {hasEvents && (
+        {(hasEvents || isStreaming) && (
           <button
             onClick={() => setActiveTab("events")}
             className={`tab-trigger shrink-0 ${activeTab === "events" ? "tab-trigger-active" : ""}`}
@@ -362,23 +365,23 @@ export default function GraphQlResponsePanel({ isMobile = false }: Props) {
                 <div
                   key={msg.id}
                   className={`px-4 py-2.5 font-mono text-xs ${msg.eventType === "error"
-                      ? "bg-error/5 border-l-2 border-error"
-                      : msg.eventType === "complete"
-                        ? "bg-text-muted/5 border-l-2 border-text-muted"
-                        : msg.eventType === "connecting"
-                          ? "bg-method-graphql/5 border-l-2 border-method-graphql"
-                          : "border-l-2 border-transparent"
+                    ? "bg-error/5 border-l-2 border-error"
+                    : msg.eventType === "complete"
+                      ? "bg-text-muted/5 border-l-2 border-text-muted"
+                      : msg.eventType === "connecting"
+                        ? "bg-method-graphql/5 border-l-2 border-method-graphql"
+                        : "border-l-2 border-transparent"
                     }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span
                       className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${msg.eventType === "data"
-                          ? "bg-success/15 text-success"
-                          : msg.eventType === "error"
-                            ? "bg-error/15 text-error"
-                            : msg.eventType === "complete"
-                              ? "bg-text-muted/15 text-text-muted"
-                              : "bg-method-graphql/15 text-method-graphql"
+                        ? "bg-success/15 text-success"
+                        : msg.eventType === "error"
+                          ? "bg-error/15 text-error"
+                          : msg.eventType === "complete"
+                            ? "bg-text-muted/15 text-text-muted"
+                            : "bg-method-graphql/15 text-method-graphql"
                         }`}
                     >
                       {msg.eventType}

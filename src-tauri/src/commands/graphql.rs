@@ -116,7 +116,6 @@ pub async fn graphql_subscribe(
     window: Window,
     request: GraphQlRequest,
 ) -> AppResult<String> {
-    println!("graphql_subscribe");
     let mut headers = rows_to_map(&request.headers);
     apply_auth_headers(&request.auth, &mut headers);
 
@@ -135,7 +134,7 @@ pub async fn graphql_subscribe(
     )
     .await?;
 
-    let connection_id = handle.connection_id.clone();
+    let connection_id = request.id.clone();
     let cancel_token = handle.cancel_token.clone();
     let mut rx = handle.rx;
     let cid = connection_id.clone();
