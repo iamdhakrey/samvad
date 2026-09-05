@@ -220,7 +220,7 @@ pub async fn ws_send(
     let tx = connections
         .get(&connection_id)
         .ok_or_else(|| AppError::WebSocket("connection not found (may have been closed)".into()))?;
-
+    println!("{:#?}", message);
     tx.send(tokio_tungstenite::tungstenite::Message::Text(
         message.clone().into(),
     ))

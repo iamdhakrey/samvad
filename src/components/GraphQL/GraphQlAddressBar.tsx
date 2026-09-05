@@ -46,6 +46,7 @@ export default function GraphQlAddressBar({
   // Parse all named operations in the document
   const docOperations = useMemo(() => parseDocumentOperations(query), [query]);
   const activeOp = docOperations.find((o) => o.name === operationName) ?? docOperations[0];
+  console.log("activeOp", activeOp)
 
   const isSubscription = (activeOp ? activeOp.type === "subscription" : requestType === "subscription");
   const isActive = callStatus === "sending" || callStatus === "streaming";
@@ -335,9 +336,8 @@ function GraphQlOperationDropdown({
           )}
         </div>
         <ChevronDown
-          className={`w-3.5 h-3.5 text-text-secondary transition-transform duration-200 shrink-0 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`w-3.5 h-3.5 text-text-secondary transition-transform duration-200 shrink-0 ${isOpen ? "rotate-180" : ""
+            }`}
         />
       </button>
 
@@ -362,11 +362,10 @@ function GraphQlOperationDropdown({
                     onSelect(op);
                     setIsOpen(false);
                   }}
-                  className={`flex items-center justify-between w-full px-3 py-2 text-xs text-left transition-all duration-150 cursor-pointer ${
-                    isSelected
-                      ? "bg-panel text-text-primary font-semibold"
-                      : "text-text-secondary hover:bg-panel/70 hover:text-text-primary"
-                  }`}
+                  className={`flex items-center justify-between w-full px-3 py-2 text-xs text-left transition-all duration-150 cursor-pointer ${isSelected
+                    ? "bg-panel text-text-primary font-semibold"
+                    : "text-text-secondary hover:bg-panel/70 hover:text-text-primary"
+                    }`}
                 >
                   <div className="flex items-center gap-2 truncate pr-2">
                     <span

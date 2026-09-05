@@ -124,9 +124,8 @@ export default function GraphQlResponsePanel({ isMobile = false }: Props) {
     <div className="flex h-full flex-col">
       {/* Status bar */}
       <div
-        className={`flex items-center gap-3 border-b border-border bg-panel text-sm ${
-          isMobile ? "px-3 py-2" : "px-4 py-2"
-        }`}
+        className={`flex items-center gap-3 border-b border-border bg-panel text-sm ${isMobile ? "px-3 py-2" : "px-4 py-2"
+          }`}
       >
         {/* Status dot + label */}
         <div className="flex items-center gap-2">
@@ -140,11 +139,10 @@ export default function GraphQlResponsePanel({ isMobile = false }: Props) {
         {/* HTTP status */}
         {response && (
           <span
-            className={`font-mono text-xs px-1.5 py-0.5 rounded ${
-              response.status >= 200 && response.status < 300
+            className={`font-mono text-xs px-1.5 py-0.5 rounded ${response.status >= 200 && response.status < 300
                 ? "bg-success/15 text-success"
                 : "bg-error/15 text-error"
-            }`}
+              }`}
           >
             {response.status} {response.statusText}
           </span>
@@ -220,9 +218,8 @@ export default function GraphQlResponsePanel({ isMobile = false }: Props) {
 
       {/* Tab strip */}
       <div
-        className={`flex gap-1 border-b border-border ${
-          isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
-        }`}
+        className={`flex gap-1 border-b border-border ${isMobile ? "overflow-x-auto scrollbar-hide px-2" : "px-4"
+          }`}
       >
         <button
           onClick={() => setActiveTab("response")}
@@ -364,27 +361,25 @@ export default function GraphQlResponsePanel({ isMobile = false }: Props) {
               {subMessages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`px-4 py-2.5 font-mono text-xs ${
-                    msg.eventType === "error"
+                  className={`px-4 py-2.5 font-mono text-xs ${msg.eventType === "error"
                       ? "bg-error/5 border-l-2 border-error"
                       : msg.eventType === "complete"
-                      ? "bg-text-muted/5 border-l-2 border-text-muted"
-                      : msg.eventType === "connecting"
-                      ? "bg-method-graphql/5 border-l-2 border-method-graphql"
-                      : "border-l-2 border-transparent"
-                  }`}
+                        ? "bg-text-muted/5 border-l-2 border-text-muted"
+                        : msg.eventType === "connecting"
+                          ? "bg-method-graphql/5 border-l-2 border-method-graphql"
+                          : "border-l-2 border-transparent"
+                    }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span
-                      className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                        msg.eventType === "data"
+                      className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${msg.eventType === "data"
                           ? "bg-success/15 text-success"
                           : msg.eventType === "error"
-                          ? "bg-error/15 text-error"
-                          : msg.eventType === "complete"
-                          ? "bg-text-muted/15 text-text-muted"
-                          : "bg-method-graphql/15 text-method-graphql"
-                      }`}
+                            ? "bg-error/15 text-error"
+                            : msg.eventType === "complete"
+                              ? "bg-text-muted/15 text-text-muted"
+                              : "bg-method-graphql/15 text-method-graphql"
+                        }`}
                     >
                       {msg.eventType}
                     </span>

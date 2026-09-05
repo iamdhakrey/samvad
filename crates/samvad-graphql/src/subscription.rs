@@ -2,7 +2,10 @@ use futures_util::{SinkExt, StreamExt};
 use samvad_error::{AppError, AppResult};
 use std::collections::BTreeMap;
 use tokio::sync::mpsc;
-use tokio_tungstenite::{connect_async_tls_with_config, tungstenite::Message};
+use tokio_tungstenite::{
+    connect_async_tls_with_config,
+    tungstenite::{client::IntoClientRequest as _, Message},
+};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
@@ -53,12 +56,24 @@ pub async fn start_subscription(
     let (tx, rx) = mpsc::unbounded_channel::<GraphQlEvent>();
 
     // Build the WebSocket request with the graphql-ws sub-protocol.
-    let request = http::Request::builder()
-        .uri(&ws_url)
-        .header("Sec-WebSocket-Protocol", "graphql-ws")
-        .header("User-Agent", "Samvad/0.1")
-        .body(())
+    // let request = http::Request::builder()
+    //     .uri(&ws_url)
+    //     .header("Sec-WebSocket-Protocol", "graphql-ws")
+    //     .header("User-Agent", "Samvad/0.1")
+    //     .body(())
+    //     .map_err(|e| AppError::GraphQlError(format!("Failed to build WS request: {e}")))?;
+
+    let mut request = ws_url
+        .as_str()
+        .into_client_request()
         .map_err(|e| AppError::GraphQlError(format!("Failed to build WS request: {e}")))?;
+    request.headers_mut().insert(
+        "Sec-WebSocket-Protocol",
+        "graphql-transport-ws".parse().unwrap(),
+    );
+    request
+        .headers_mut()
+        .insert("User-Agent", "Samvad/0.1".parse().unwrap());
 
     let (ws_stream, _) = connect_async_tls_with_config(request, None, false, None)
         .await
@@ -117,9 +132,9 @@ pub async fn start_subscription(
         ops.first().map(|(_, name)| name.clone())
     });
 
-    if let Some(op) = op_to_send {
-        payload["operationName"] = serde_json::Value::String(op);
-    }
+    // if let Some(op) = op_to_send {
+    //     payload["operationName"] = serde_json::Value::String(op);
+    // }
 
     let sub_id = Uuid::new_v4().to_string();
     let subscribe_msg = serde_json::json!({
@@ -127,6 +142,8 @@ pub async fn start_subscription(
         "type": "subscribe",
         "payload": payload,
     });
+
+    println!("subscribe_msg: {:#?}", subscribe_msg);
     write
         .send(Message::Text(subscribe_msg.to_string().into()))
         .await
@@ -153,6 +170,7 @@ pub async fn start_subscription(
                     break;
                 }
                 msg = read.next() => {
+                    println!("message: {:?}", msg);
                     match msg {
                         Some(Ok(Message::Text(txt))) => {
                             let val: serde_json::Value =
@@ -191,7 +209,26 @@ pub async fn start_subscription(
                                     });
                                     break;
                                 }
-                                _ => {}
+                                "data" => {
+                                    let p = val
+                                        .get("payload")
+                                        .map(|p| serde_json::to_string_pretty(p).unwrap_or_default())
+                                        .unwrap_or_default();
+                                    let _ = tx.send(GraphQlEvent {
+                                        event_type: "data".to_string(),
+                                        payload: p,
+                                    });
+                                }
+                                _ => {
+                                    let p = val
+                                        .get("payload")
+                                        .map(|p| serde_json::to_string_pretty(p).unwrap_or_default())
+                                        .unwrap_or_default();
+                                    let _ = tx.send(GraphQlEvent {
+                                        event_type: "data".to_string(),
+                                        payload: p,
+                                    });
+                                }
                             }
                         }
                         Some(Ok(Message::Close(_))) | None => {
@@ -207,6 +244,12 @@ pub async fn start_subscription(
                                 payload: format!("\"{}\"", e),
                             });
                             break;
+                        }
+                        Some(Ok(Message::Ping(_))) => {
+                            let _ = tx.send(GraphQlEvent {
+                                event_type: "ping".to_string(),
+                                payload: "{}".to_string(),
+                            });
                         }
                         _ => {}
                     }
